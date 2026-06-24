@@ -17,7 +17,7 @@ export default function SharePanel({ token }: { token: string }) {
       <h3>Sdílej s partou</h3>
       <p><a href={url}>{url}</a></p>
       {/* dangerouslySetInnerHTML je zde bezpečné — svg je výstup qrcode knihovny z naší vlastní URL, ne uživatelský vstup */}
-      <div dangerouslySetInnerHTML={{ __html: svg }} aria-label="QR kód na board" />
+      <div role="img" dangerouslySetInnerHTML={{ __html: svg }} aria-label="QR kód na board" />
     </div>
   )
 }

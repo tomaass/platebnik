@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from './client'
 import { boards, contributions } from './schema'
@@ -28,6 +28,11 @@ export const createContribution = async (input: {
     tipHaler: input.tipHaler,
   })
   return id
+}
+
+export const countContributionsByBoard = async (boardId: string): Promise<number> => {
+  const [row] = await db.select({ value: count() }).from(contributions).where(eq(contributions.boardId, boardId))
+  return row?.value ?? 0
 }
 
 const assertBoardOwner = async (boardId: string, userId: string): Promise<void> => {

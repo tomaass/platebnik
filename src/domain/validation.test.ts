@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { accountSchema, boardSchema, signatureSchema } from './validation'
+import { accountSchema, boardSchema, contributionSchema, signatureSchema } from './validation'
 
 describe('accountSchema', () => {
   test('přijme validní účet', () => {
@@ -35,5 +35,33 @@ describe('signatureSchema', () => {
   })
   test('odmítne příliš dlouhý vzkaz', () => {
     expect(signatureSchema.safeParse({ message: 'a'.repeat(500) }).success).toBe(false)
+  })
+})
+
+describe('contributionSchema', () => {
+  const valid = {
+    amountHaler: 9900,
+    tipHaler: 900,
+    selectionSnapshot: [{ name: 'Pivo', quantity: 2 }],
+  }
+
+  test('přijme platný payload', () => {
+    expect(contributionSchema.safeParse(valid).success).toBe(true)
+  })
+
+  test('přijme prázdné jméno a vzkaz', () => {
+    expect(contributionSchema.safeParse({ ...valid, name: undefined, message: undefined }).success).toBe(true)
+  })
+
+  test('odmítne záporný amountHaler', () => {
+    expect(contributionSchema.safeParse({ ...valid, amountHaler: -1 }).success).toBe(false)
+  })
+
+  test('odmítne selectionSnapshot s quantity: 0', () => {
+    const r = contributionSchema.safeParse({
+      ...valid,
+      selectionSnapshot: [{ name: 'Pivo', quantity: 0 }],
+    })
+    expect(r.success).toBe(false)
   })
 })

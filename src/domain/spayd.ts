@@ -4,7 +4,7 @@ import type { Haler } from './types'
 export const sanitizeSpaydMsg = (input: string): string =>
   input
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // odstranh diakritická znaménka
+    .replace(/\p{Diacritic}/gu, '') // odstraň diakritická znaménka
     .replace(/[^A-Za-z0-9 .,_-]/g, '')
     .slice(0, 60)
 

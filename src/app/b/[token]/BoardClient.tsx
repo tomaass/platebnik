@@ -22,6 +22,7 @@ export default function BoardClient(props: Props) {
   const [tipHaler, setTipHaler] = useState(0)
   const [qr, setQr] = useState('')
   const [signed, setSigned] = useState(false)
+  const [signError, setSignError] = useState<string | undefined>(undefined)
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
 
@@ -55,12 +56,17 @@ export default function BoardClient(props: Props) {
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
 
   const sign = async () => {
+    setSignError(undefined)
     const res = await signAction({
       token: props.token, name: name || undefined, message: message || undefined,
       selectionSnapshot: entries.map((e) => ({ name: e.name, quantity: e.quantity })),
       amountHaler: total, tipHaler,
     })
-    if (res.ok) setSigned(true)
+    if (res.ok) {
+      setSigned(true)
+    } else {
+      setSignError(res.error ?? 'Nastala chyba, zkuste to znovu.')
+    }
   }
 
   return (
@@ -85,14 +91,17 @@ export default function BoardClient(props: Props) {
           ))}
           <input
             type="number" inputMode="decimal" placeholder="vlastní Kč"
-            onChange={(e) => setTipHaler(Math.round(Number(e.target.value) * 100))}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              setTipHaler(Number.isFinite(v) && v >= 0 ? Math.round(v * 100) : 0)
+            }}
           />
         </div>
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
       {qr
-        ? <div dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR Platba" />
+        ? <div role="img" dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR Platba" />
         : <p>Vyber položky nebo zadej dýško.</p>}
 
       {!signed
@@ -102,6 +111,7 @@ export default function BoardClient(props: Props) {
             <input placeholder="Jméno" value={name} onChange={(e) => setName(e.target.value)} />
             <input placeholder="Vzkaz" value={message} onChange={(e) => setMessage(e.target.value)} />
             <button onClick={sign} disabled={total <= 0}>Podepsat se</button>
+            {signError && <p style={{ color: 'red' }}>{signError}</p>}
           </section>
         )
         : <p>Díky, podpis odeslán!</p>}

@@ -14,7 +14,7 @@ const devSendVerificationRequest = async ({
   url: string
   // eslint-disable-next-line @typescript-eslint/require-await
 }) => {
-  console.log('\n🔑 Magic link pro ' + identifier + ':\n' + url + '\n')
+  console.log('\n[dev] Magic link pro ' + identifier + ':\n' + url + '\n')
 }
 
 const nodemailerProvider = Nodemailer({
