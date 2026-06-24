@@ -14,6 +14,7 @@ import { accountSchema, boardSchema } from '@/domain/validation'
 import type { ItemInput } from '@/domain/types'
 
 export const saveAccountAction = async (
+  _prevState: { error?: string },
   formData: FormData,
 ): Promise<{ error?: string }> => {
   const user = await requireUser()
