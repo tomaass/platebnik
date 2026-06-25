@@ -1,6 +1,14 @@
 import type { NextConfig } from 'next'
 
 const config: NextConfig = {
+  async redirects() {
+    return [{
+      source: '/:path*',
+      has: [{ type: 'host', value: 'www.platebnik.cz' }],
+      destination: 'https://platebnik.cz/:path*',
+      permanent: true,
+    }]
+  },
   async headers() {
     return [{
       source: '/:path*',
