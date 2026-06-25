@@ -31,7 +31,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   providers: [
-    ...(process.env.AUTH_GOOGLE_ID ? [Google] : []),
+    // Safe for Google (it verifies email ownership): same email via magic link
+    // or Google resolves to one account instead of an OAuthAccountNotLinked error.
+    ...(process.env.AUTH_GOOGLE_ID
+      ? [Google({ allowDangerousEmailAccountLinking: true })]
+      : []),
     nodemailerProvider,
   ],
   pages: { signIn: '/signin' },
