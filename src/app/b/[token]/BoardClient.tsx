@@ -19,7 +19,7 @@ interface Props {
 
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
-  const [tipHaler, setTipHaler] = useState(0)
+  const [tipKc, setTipKc] = useState('')
   const [qr, setQr] = useState('')
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
@@ -36,6 +36,9 @@ export default function BoardClient(props: Props) {
   )
 
   const subtotal = itemsSubtotal(entries)
+  // Dýško: tlačítka % jen předvyplní input "vlastní Kč", který je jediný zdroj pravdy.
+  const tipKcNum = Number(tipKc)
+  const tipHaler = Number.isFinite(tipKcNum) && tipKcNum > 0 ? Math.round(tipKcNum * 100) : 0
   const total = selectionTotal({ entries, tipHaler })
 
   const spayd = buildSpayd({
@@ -87,14 +90,12 @@ export default function BoardClient(props: Props) {
         <h3>Dýško (dobrovolné)</h3>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {props.tipPercents.map((p) => (
-            <button key={p} onClick={() => setTipHaler(tipFromPercent(subtotal, p))}>{p} %</button>
+            <button key={p} onClick={() => setTipKc(String(tipFromPercent(subtotal, p) / 100))}>{p} %</button>
           ))}
           <input
             type="number" inputMode="decimal" placeholder="vlastní Kč"
-            onChange={(e) => {
-              const v = Number(e.target.value)
-              setTipHaler(Number.isFinite(v) && v >= 0 ? Math.round(v * 100) : 0)
-            }}
+            value={tipKc}
+            onChange={(e) => setTipKc(e.target.value)}
           />
         </div>
       </section>
