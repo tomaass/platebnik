@@ -5,7 +5,13 @@ import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
-import { renderQrDataUrl, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
+import { renderQrCard, shareOrDownload, qrFileName, CARD_GEOMETRY } from './save-qr'
+import type { QrCardOutput } from './save-qr'
+
+// Na stránce ukazujeme jen výřez QR (bez brandingu). <img> je ale celá karta,
+// takže iOS long-press uloží zdroj s brandingem. Výřez = okno o velikosti QR.
+const QR_DISPLAY = 280
+const SCALE = QR_DISPLAY / CARD_GEOMETRY.qr.size
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -20,8 +26,7 @@ interface Props {
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
   const [tipKc, setTipKc] = useState('')
-  const [qrUrl, setQrUrl] = useState<string | null>(null)
-  const [cardBlob, setCardBlob] = useState<Blob | null>(null)
+  const [card, setCard] = useState<QrCardOutput | null>(null)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
   const [qrError, setQrError] = useState<string | undefined>(undefined)
@@ -49,25 +54,19 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // Při každé změně klientsky generujeme dvě věci: holý QR (data URL) pro zobrazení
-  // a brandovanou kartu (blob) pro uložení. Karta se chystá dopředu, aby na iOS šlo
-  // share() zavolat hned v gestu. Žádný server request.
+  // Při každé změně klientsky vygenerujeme brandovanou kartu (dataUrl pro <img> +
+  // blob pro sdílení). Chystá se dopředu, aby na iOS šlo share() zavolat hned
+  // v gestu. Žádný server request.
   useEffect(() => {
     if (total <= 0) {
-      setQrUrl(null)
-      setCardBlob(null)
+      setCard(null)
       return
     }
     let cancelled = false // standardní cleanup pro async efekt — zahodí zastaralý výsledek
     setQrError(undefined)
-    Promise.all([
-      renderQrDataUrl(spayd),
-      renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) }),
-    ])
-      .then(([url, blob]) => {
-        if (cancelled) return
-        setQrUrl(url)
-        setCardBlob(blob)
+    renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+      .then((result) => {
+        if (!cancelled) setCard(result)
       })
       .catch(() => {
         if (!cancelled) setQrError('QR se nepodařilo vygenerovat.')
@@ -79,12 +78,12 @@ export default function BoardClient(props: Props) {
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
 
   const saveQr = async () => {
-    if (!cardBlob) return
+    if (!card) return
     setSaving(true)
     setQrError(undefined)
     try {
-      // cardBlob je hotový → share() se zavolá hned v gestu (iOS user-activation).
-      await shareOrDownload(cardBlob, qrFileName(props.title))
+      // card.blob je hotový → share() se zavolá hned v gestu (iOS user-activation).
+      await shareOrDownload(card.blob, qrFileName(props.title))
     } catch {
       setQrError('QR se nepodařilo uložit, zkus to znovu.')
     } finally {
@@ -135,15 +134,25 @@ export default function BoardClient(props: Props) {
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {qrUrl
+      {card
         ? (
           <>
-            <img
-              src={qrUrl}
-              alt="QR platba"
-              style={{ width: '100%', maxWidth: 320, height: 'auto', display: 'block' }}
-            />
-            <button onClick={saveQr} disabled={saving || !cardBlob}>
+            <div
+              style={{ width: QR_DISPLAY, height: QR_DISPLAY, maxWidth: '100%', overflow: 'hidden', position: 'relative' }}
+            >
+              <img
+                src={card.dataUrl}
+                alt="QR platba"
+                style={{
+                  position: 'absolute',
+                  left: -CARD_GEOMETRY.qr.x * SCALE,
+                  top: -CARD_GEOMETRY.qr.y * SCALE,
+                  width: CARD_GEOMETRY.width * SCALE,
+                  maxWidth: 'none',
+                }}
+              />
+            </div>
+            <button onClick={saveQr} disabled={saving}>
               {saving ? 'Ukládám…' : 'Uložit QR'}
             </button>
             <p style={{ fontSize: '0.85rem', color: '#555' }}>

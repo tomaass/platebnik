@@ -27,19 +27,25 @@ const BRAND_H = 40
 const URL_H = 30
 const CAPTION_H = 40
 const GAP = 20
+const QR_X = PADDING
+const QR_Y = PADDING + BRAND_H + URL_H + GAP
 const CARD_W = QR_SIZE + PADDING * 2
 const CARD_H = PADDING + BRAND_H + URL_H + GAP + QR_SIZE + GAP + CAPTION_H + PADDING
 
-// Holý QR pro zobrazení na stránce (bez brandingu). data: URL je na iOS spolehlivě
-// long-pressovatelný ("Přidat do Fotek"), na rozdíl od blob:/canvas obrázků.
-export const renderQrDataUrl = (spayd: string): Promise<string> =>
-  QRCode.toDataURL(spayd, {
-    width: QR_SIZE,
-    margin: 1,
-    color: { dark: '#111111', light: '#ffffff' },
-  })
+// Geometrie karty — umožní v UI vykreslit jen výřez QR (bez brandingu), zatímco
+// long-press uloží celý zdrojový obrázek (kartu s brandingem).
+export const CARD_GEOMETRY = {
+  width: CARD_W,
+  height: CARD_H,
+  qr: { x: QR_X, y: QR_Y, size: QR_SIZE },
+} as const
 
-export const renderQrCard = async (input: QrCardInput): Promise<Blob> => {
+export interface QrCardOutput {
+  dataUrl: string // pro <img> na stránce (data: URL je na iOS spolehlivě long-pressovatelný)
+  blob: Blob // pro tlačítko Uložit (Web Share / download)
+}
+
+export const renderQrCard = async (input: QrCardInput): Promise<QrCardOutput> => {
   const qrCanvas = await QRCode.toCanvas(input.spayd, {
     width: QR_SIZE,
     margin: 1,
@@ -64,19 +70,20 @@ export const renderQrCard = async (input: QrCardInput): Promise<Blob> => {
   ctx.font = `400 20px ${FONT_STACK}`
   ctx.fillText(BRAND_URL, CARD_W / 2, PADDING + BRAND_H + 20)
 
-  const qrY = PADDING + BRAND_H + URL_H + GAP
-  ctx.drawImage(qrCanvas, PADDING, qrY, QR_SIZE, QR_SIZE)
+  ctx.drawImage(qrCanvas, QR_X, QR_Y, QR_SIZE, QR_SIZE)
 
   ctx.fillStyle = '#555555'
   ctx.font = `400 22px ${FONT_STACK}`
-  ctx.fillText(qrCaption(input), CARD_W / 2, qrY + QR_SIZE + GAP + 22)
+  ctx.fillText(qrCaption(input), CARD_W / 2, QR_Y + QR_SIZE + GAP + 22)
 
-  return new Promise<Blob>((resolve, reject) =>
+  const blob = await new Promise<Blob>((resolve, reject) =>
     card.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Nepodařilo se vytvořit PNG.'))),
+      (b) => (b ? resolve(b) : reject(new Error('Nepodařilo se vytvořit PNG.'))),
       'image/png',
     ),
   )
+
+  return { dataUrl: card.toDataURL('image/png'), blob }
 }
 
 const downloadBlob = (blob: Blob, fileName: string): void => {
