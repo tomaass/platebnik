@@ -1,0 +1,162 @@
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.logo .dot {
+  color: var(--accent);
+}
+
+.login {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.hero {
+  padding: 18px 20px 28px;
+}
+
+.kicker {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--surface-alt);
+  border-radius: 20px;
+  padding: 7px 12px;
+  margin-bottom: 14px;
+}
+
+.h1 {
+  font-size: 33px;
+  line-height: 1.05;
+  margin: 0 0 12px;
+}
+
+.lead {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+}
+
+.cta {
+  display: block;
+  text-align: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  box-shadow: var(--shadow-accent);
+  margin-bottom: 10px;
+}
+
+.ctaSub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.steps {
+  background: #2a1620;
+  padding: 26px 20px;
+}
+
+.stepsTitle {
+  color: #fff;
+  font-size: 20px;
+  margin: 0 0 18px;
+}
+
+.step {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.stepN {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 34px;
+  text-align: center;
+}
+
+.stepText b {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.stepText span {
+  color: #fff;
+  opacity: 0.75;
+  font-size: 13px;
+}
+
+.trust {
+  padding: 24px 20px;
+}
+
+.tcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.tcard .ic {
+  font-size: 22px;
+}
+
+.tcard b {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin: 6px 0 3px;
+}
+
+.tcard span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.foot {
+  text-align: center;
+  padding: 18px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
