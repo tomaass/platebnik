@@ -5,10 +5,14 @@ import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
-import { renderQrDataUrl, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
+import { renderQrDataUrl, renderQrSvg, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
 
 // Debounce the (heavier) branded-card render so it doesn't run on every keystroke.
 const CARD_DEBOUNCE_MS = 300
+
+// Live QR: a canvas-backed PNG (long-pressable on iOS) with a canvas-free SVG fallback
+// for WebViews where canvas is unavailable.
+type LiveQr = { kind: 'png'; url: string } | { kind: 'svg'; markup: string }
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -23,7 +27,7 @@ interface Props {
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
   const [tipKc, setTipKc] = useState('')
-  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [qr, setQr] = useState<LiveQr | null>(null)
   const [card, setCard] = useState<Blob | null>(null)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
@@ -53,17 +57,22 @@ export default function BoardClient(props: Props) {
   })
 
   // Live QR for display — plain (no branding), generated immediately so it tracks the total
-  // closely. data: URL is long-pressable on iOS. AbortController discards a stale result.
+  // closely. Prefer a canvas PNG (long-pressable on iOS); if canvas is unavailable, fall back
+  // to a canvas-free SVG so the QR is still scannable. AbortController discards a stale result.
   useEffect(() => {
     if (total <= 0) {
-      setQrUrl(null)
+      setQr(null)
       return
     }
     const ac = new AbortController()
     setQrError(undefined)
     renderQrDataUrl(spayd)
-      .then((url) => { if (!ac.signal.aborted) setQrUrl(url) })
-      .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
+      .then((url) => { if (!ac.signal.aborted) setQr({ kind: 'png', url }) })
+      .catch(() =>
+        renderQrSvg(spayd)
+          .then((markup) => { if (!ac.signal.aborted) setQr({ kind: 'svg', markup }) })
+          .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') }),
+      )
     return () => ac.abort()
   }, [spayd, total])
 
@@ -142,14 +151,25 @@ export default function BoardClient(props: Props) {
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {qrUrl
+      {qr
         ? (
           <>
-            <img
-              src={qrUrl}
-              alt="QR platba"
-              style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
-            />
+            {qr.kind === 'png'
+              ? (
+                <img
+                  src={qr.url}
+                  alt="QR platba"
+                  style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
+                />
+              )
+              : (
+                <div
+                  role="img"
+                  aria-label="QR platba"
+                  style={{ width: '100%', maxWidth: 280 }}
+                  dangerouslySetInnerHTML={{ __html: qr.markup }}
+                />
+              )}
             <button onClick={saveQr} disabled={saving || !card}>
               {saving ? 'Ukládám…' : 'Uložit QR'}
             </button>

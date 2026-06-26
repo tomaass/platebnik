@@ -31,8 +31,14 @@ const QR_COLOR = { dark: '#111111', light: '#ffffff' }
 
 // Plain QR for on-screen display (no branding). A data: URL is reliably long-pressable on iOS
 // ("Add to Photos"), unlike inline SVG. Rendered larger than shown so it stays crisp on hi-DPI.
+// Uses canvas under the hood (toDataURL).
 export const renderQrDataUrl = (spayd: string): Promise<string> =>
   QRCode.toDataURL(spayd, { width: 720, margin: 1, color: QR_COLOR })
+
+// Canvas-free SVG fallback for display when canvas/toDataURL is unavailable (some in-app
+// WebViews). Not long-pressable, but keeps the payment QR scannable everywhere.
+export const renderQrSvg = (spayd: string): Promise<string> =>
+  QRCode.toString(spayd, { type: 'svg', margin: 1, color: QR_COLOR })
 
 // Card layout — the canvas draws the QR at QR_X/QR_Y/QR_SIZE. When adding design later
 // (e.g. a logo), add a new constant and fold it into QR_Y and CARD_H — never hardcode positions.
