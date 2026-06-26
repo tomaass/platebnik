@@ -1,0 +1,1 @@
+ALTER TABLE "boards" ADD COLUMN "theme" text DEFAULT 'sunset' NOT NULL;

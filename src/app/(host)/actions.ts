@@ -12,6 +12,7 @@ import { setPaid } from '@/db/contributions'
 import { czAccountToIban } from '@/domain/iban'
 import { accountSchema, boardSchema } from '@/domain/validation'
 import type { ItemInput } from '@/domain/types'
+import type { ThemeKey } from '@/design/themes'
 
 export const saveAccountAction = async (
   _prevState: { error?: string },
@@ -30,7 +31,7 @@ export const saveAccountAction = async (
 }
 
 export const createBoardAction = async (
-  input: { title: string; items: ItemInput[] },
+  input: { title: string; items: ItemInput[]; theme: ThemeKey },
 ): Promise<{ token: string } | { error: string }> => {
   const user = await requireUser()
   const parsed = boardSchema.safeParse(input)
@@ -42,7 +43,7 @@ export const createBoardAction = async (
 
 export const updateBoardAction = async (
   token: string,
-  input: { title: string; items: ItemInput[] },
+  input: { title: string; items: ItemInput[]; theme: ThemeKey },
 ): Promise<{ error?: string }> => {
   const user = await requireUser()
   const parsed = boardSchema.safeParse(input)

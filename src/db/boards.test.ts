@@ -4,7 +4,7 @@ import { db } from './client'
 import { users } from './schema'
 import { eq } from 'drizzle-orm'
 import {
-  createBoard, deleteBoard, getBoardByToken, listBoardsByUser, updateBoard,
+  createBoard, deleteBoard, getBoardByToken, getLatestBoardTheme, listBoardsByUser, updateBoard,
 } from './boards'
 
 const userId = `test-${nanoid(8)}`
@@ -54,5 +54,28 @@ describe('boards repository', () => {
 
   test('getBoardByToken neexistující = null', async () => {
     expect(await getBoardByToken('nope')).toBeNull()
+  })
+
+  test('board nese motiv a getLatestBoardTheme vrátí poslední', async () => {
+    const a = await createBoard({ userId, title: 'A', items: [], theme: 'green' })
+    const boardA = await getBoardByToken(a)
+    expect(boardA?.theme).toBe('green')
+
+    expect(await getLatestBoardTheme(userId)).toBe('green')
+
+    await updateBoard(a, userId, { title: 'A2', items: [], theme: 'sunset' })
+    expect((await getBoardByToken(a))?.theme).toBe('sunset')
+
+    await deleteBoard(a, userId)
+  })
+
+  test('getLatestBoardTheme bez boardů = výchozí', async () => {
+    expect(await getLatestBoardTheme('nobody-here')).toBe('sunset')
+  })
+
+  test('createBoard bez motivu spadne na výchozí', async () => {
+    const t = await createBoard({ userId, title: 'X', items: [] })
+    expect((await getBoardByToken(t))?.theme).toBe('sunset')
+    await deleteBoard(t, userId)
   })
 })

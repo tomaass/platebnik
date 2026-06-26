@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as R from 'remeda'
 import type { ItemInput } from '@/domain/types'
+import { DEFAULT_THEME } from '@/design/themes'
 import { createBoardAction, updateBoardAction } from '../actions'
 
 interface Props {
@@ -27,12 +28,12 @@ export default function BoardEditor({ token, initialTitle = '', initialItems = [
     setError('')
     const clean = R.pipe(items, R.filter((it) => it.name.trim().length > 0))
     if (token) {
-      const res = await updateBoardAction(token, { title, items: clean })
+      const res = await updateBoardAction(token, { title, items: clean, theme: DEFAULT_THEME })
       if (res.error) return setError(res.error)
       router.refresh()
       return
     }
-    const res = await createBoardAction({ title, items: clean })
+    const res = await createBoardAction({ title, items: clean, theme: DEFAULT_THEME })
     if ('error' in res) return setError(res.error)
     router.push(`/boards/${res.token}`)
   }

@@ -1,7 +1,8 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import * as R from 'remeda'
 import type { ItemInput } from '@/domain/types'
+import { DEFAULT_THEME, isThemeKey, type ThemeKey } from '@/design/themes'
 import { generateVariableSymbol } from '@/lib/vs'
 import { db } from './client'
 import { boards, items } from './schema'
@@ -12,6 +13,7 @@ export interface BoardWithItems {
   title: string
   variableSymbol: string
   tipPercents: number[]
+  theme: ThemeKey
   items: { id: string; name: string; priceHaler: number; position: number }[]
 }
 
@@ -30,10 +32,12 @@ export const createBoard = async (input: {
   userId: string
   title: string
   items: ItemInput[]
+  theme?: ThemeKey
 }): Promise<string> => {
   const token = nanoid(16)
   await db.insert(boards).values({
     token, userId: input.userId, title: input.title,
+    theme: input.theme ?? DEFAULT_THEME,
     variableSymbol: generateVariableSymbol(),
   })
   if (input.items.length > 0) await db.insert(items).values(itemRows(token, input.items))
@@ -48,6 +52,7 @@ export const getBoardByToken = async (token: string): Promise<BoardWithItems | n
   return {
     token: board.token, userId: board.userId, title: board.title,
     variableSymbol: board.variableSymbol, tipPercents: board.tipPercents,
+    theme: isThemeKey(board.theme) ? board.theme : DEFAULT_THEME,
     items: R.map(rows, (r) => ({
       id: r.id, name: r.name, priceHaler: r.priceHaler, position: r.position,
     })),
@@ -69,11 +74,11 @@ const assertOwner = async (token: string, userId: string): Promise<void> => {
 export const updateBoard = async (
   token: string,
   userId: string,
-  input: { title: string; items: ItemInput[] },
+  input: { title: string; items: ItemInput[]; theme?: ThemeKey },
 ): Promise<void> => {
   await assertOwner(token, userId)
   await db.update(boards)
-    .set({ title: input.title, updatedAt: new Date() })
+    .set({ title: input.title, theme: input.theme ?? DEFAULT_THEME, updatedAt: new Date() })
     .where(eq(boards.token, token))
   await db.delete(items).where(eq(items.boardId, token))
   if (input.items.length > 0) await db.insert(items).values(itemRows(token, input.items))
@@ -82,4 +87,13 @@ export const updateBoard = async (
 export const deleteBoard = async (token: string, userId: string): Promise<void> => {
   await assertOwner(token, userId)
   await db.delete(boards).where(eq(boards.token, token))
+}
+
+export const getLatestBoardTheme = async (userId: string): Promise<ThemeKey> => {
+  const rows = await db.select({ theme: boards.theme }).from(boards)
+    .where(eq(boards.userId, userId))
+    .orderBy(desc(boards.createdAt))
+    .limit(1)
+  const theme = rows[0]?.theme
+  return isThemeKey(theme) ? theme : DEFAULT_THEME
 }

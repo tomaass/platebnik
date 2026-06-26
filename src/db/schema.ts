@@ -20,6 +20,7 @@ export const boards = pgTable('boards', {
   currency: text('currency').notNull().default('CZK'),
   variableSymbol: text('variable_symbol').notNull(),
   tipPercents: jsonb('tip_percents').$type<number[]>().notNull().default([0, 5, 10]),
+  theme: text('theme').notNull().default('sunset'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
