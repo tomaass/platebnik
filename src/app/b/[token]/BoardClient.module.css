@@ -72,7 +72,9 @@
   background: var(--surface);
   padding: 0 12px;
   font-weight: 600;
-  font-size: 14px;
+  /* 16px min: iOS Safari auto-zooms (and then lets the page scroll) when a focused
+     input's font-size is below 16px. Keep at/above this to prevent the zoom-on-focus. */
+  font-size: 16px;
   text-align: center;
 }
 
