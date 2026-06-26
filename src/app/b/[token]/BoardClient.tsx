@@ -24,6 +24,7 @@ export default function BoardClient(props: Props) {
   const [qr, setQr] = useState('')
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
+  const [qrError, setQrError] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
@@ -62,8 +63,11 @@ export default function BoardClient(props: Props) {
 
   const saveQr = async () => {
     setSaving(true)
+    setQrError(undefined)
     try {
       await saveQrPng({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+    } catch {
+      setQrError('QR se nepodařilo uložit, zkus to znovu.')
     } finally {
       setSaving(false)
     }
@@ -122,6 +126,7 @@ export default function BoardClient(props: Props) {
             <p style={{ fontSize: '0.85rem', color: '#555' }}>
               Ulož QR a načti ho v bankovní appce z galerie.
             </p>
+            {qrError && <p style={{ color: 'red' }}>{qrError}</p>}
           </>
         )
         : <p>Vyber položky nebo zadej dýško.</p>}
