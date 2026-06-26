@@ -5,7 +5,7 @@ import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
-import { renderQrDataUrl, renderQrSvg, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
+import { renderQrDataUrl, renderQrSvg, renderQrCard, shareOrDownload, qrFileName, canUseCanvas } from './save-qr'
 
 // Debounce the (heavier) branded-card render so it doesn't run on every keystroke.
 const CARD_DEBOUNCE_MS = 300
@@ -29,6 +29,9 @@ export default function BoardClient(props: Props) {
   const [tipKc, setTipKc] = useState('')
   const [qr, setQr] = useState<LiveQr | null>(null)
   const [card, setCard] = useState<Blob | null>(null)
+  // Optimistic: assume canvas works (the common case, and keeps SSR/hydration consistent);
+  // a client-only probe corrects it for canvas-less WebViews.
+  const [canvasOk, setCanvasOk] = useState(true)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
   const [qrError, setQrError] = useState<string | undefined>(undefined)
@@ -56,9 +59,13 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
+  // Detect canvas support once on the client. When absent we go straight to SVG and hide the
+  // save affordances, instead of attempting (and failing) the PNG/card render every change.
+  useEffect(() => { setCanvasOk(canUseCanvas()) }, [])
+
   // Live QR for display — plain (no branding), generated immediately so it tracks the total
-  // closely. Prefer a canvas PNG (long-pressable on iOS); if canvas is unavailable, fall back
-  // to a canvas-free SVG so the QR is still scannable. AbortController discards a stale result.
+  // closely. Canvas PNG when available (long-pressable on iOS), else a canvas-free SVG so the QR
+  // stays scannable. AbortController discards a stale result.
   useEffect(() => {
     if (total <= 0) {
       setQr(null)
@@ -66,30 +73,32 @@ export default function BoardClient(props: Props) {
     }
     const ac = new AbortController()
     setQrError(undefined)
-    renderQrDataUrl(spayd)
-      .then((url) => { if (!ac.signal.aborted) setQr({ kind: 'png', url }) })
-      .catch(() =>
-        renderQrSvg(spayd)
-          .then((markup) => { if (!ac.signal.aborted) setQr({ kind: 'svg', markup }) })
-          .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') }),
-      )
+    const toSvg = (): Promise<LiveQr> => renderQrSvg(spayd).then((markup) => ({ kind: 'svg', markup }))
+    const pending: Promise<LiveQr> = canvasOk
+      ? renderQrDataUrl(spayd).then((url): LiveQr => ({ kind: 'png', url })).catch(toSvg)
+      : toSvg()
+    pending
+      .then((next) => { if (!ac.signal.aborted) setQr(next) })
+      .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
     return () => ac.abort()
-  }, [spayd, total])
+  }, [spayd, total, canvasOk])
 
-  // Branded card for the "Uložit QR" button — pre-rendered (debounced) so share() can run
-  // within the click gesture on iOS. Cleared immediately on any change so a stale card (wrong
-  // amount) can never be saved; the button is disabled until the fresh card is ready.
+  // Branded card for the "Uložit QR" button — pre-rendered (debounced) so share() can run within
+  // the click gesture on iOS. Skipped when canvas is unavailable (card needs it). Cleared on any
+  // change so a stale card (wrong amount) can never be saved; the button is disabled until ready.
+  // A card failure doesn't surface an error — the live QR reports QR problems; here it just keeps
+  // the button disabled.
   useEffect(() => {
     setCard(null)
-    if (total <= 0) return
+    if (!canvasOk || total <= 0) return
     const ac = new AbortController()
     const timer = setTimeout(() => {
       renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
         .then((blob) => { if (!ac.signal.aborted) setCard(blob) })
-        .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
+        .catch(() => {})
     }, CARD_DEBOUNCE_MS)
     return () => { ac.abort(); clearTimeout(timer) }
-  }, [spayd, total, props.title])
+  }, [spayd, total, props.title, canvasOk])
 
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
@@ -170,12 +179,22 @@ export default function BoardClient(props: Props) {
                   dangerouslySetInnerHTML={{ __html: qr.markup }}
                 />
               )}
-            <button onClick={saveQr} disabled={saving || !card}>
-              {saving ? 'Ukládám…' : 'Uložit QR'}
-            </button>
-            <p style={{ fontSize: '0.85rem', color: '#555' }}>
-              Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" pro QR s logem. Pak QR načti v bance z galerie.
-            </p>
+            {canvasOk
+              ? (
+                <>
+                  <button onClick={saveQr} disabled={saving || !card}>
+                    {saving ? 'Ukládám…' : 'Uložit QR'}
+                  </button>
+                  <p style={{ fontSize: '0.85rem', color: '#555' }}>
+                    Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" pro QR s logem. Pak QR načti v bance z galerie.
+                  </p>
+                </>
+              )
+              : (
+                <p style={{ fontSize: '0.85rem', color: '#555' }}>
+                  Naskenuj QR ve své bankovní aplikaci.
+                </p>
+              )}
             {qrError && <p style={{ color: 'red' }}>{qrError}</p>}
           </>
         )

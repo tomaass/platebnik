@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { qrCaption, qrFileName } from './save-qr'
+import { qrCaption, qrFileName, renderQrSvg, canUseCanvas } from './save-qr'
 
 describe('qrCaption', () => {
   test('skládá název a částku', () => {
@@ -21,5 +21,19 @@ describe('qrFileName', () => {
   })
   test('fallback pro prázdný/neslugovatelný název', () => {
     expect(qrFileName('   ')).toBe('platebnik-qr.png')
+  })
+})
+
+describe('renderQrSvg', () => {
+  test('vrací inline SVG s responzivní velikostí', async () => {
+    const svg = await renderQrSvg('SPD*1.0*ACC:CZ0000')
+    expect(svg.startsWith('<svg')).toBe(true)
+    expect(svg).toContain('width:100%')
+  })
+})
+
+describe('canUseCanvas', () => {
+  test('je false bez DOM (node prostředí)', () => {
+    expect(canUseCanvas()).toBe(false)
   })
 })
