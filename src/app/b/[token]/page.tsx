@@ -1,9 +1,46 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
-import { getBoardByToken } from '@/db/boards'
+import { getBoardByToken, getBoardMeta } from '@/db/boards'
+import { SITE_NAME } from '@/lib/site'
 import BoardClient from './BoardClient'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}): Promise<Metadata> {
+  const { token } = await params
+  const board = await getBoardMeta(token)
+  if (!board) return { title: 'Akce nenalezena' }
+
+  const title = board.title
+  const description = `Zaplať za sebe na „${board.title}" — naťukej, co sis dal, a zaplať přímo hostiteli přes QR Platbu. Žádná registrace.`
+
+  return {
+    title,
+    description,
+    // Private per-event links don't belong in search engines, but we still
+    // want a nice preview when shared (iMessage, social networks).
+    robots: { index: false, follow: false },
+    alternates: { canonical: `/b/${token}` },
+    openGraph: {
+      type: 'website',
+      locale: 'cs_CZ',
+      siteName: SITE_NAME,
+      url: `/b/${token}`,
+      title: `${title} · ${SITE_NAME}`,
+      description,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} · ${SITE_NAME}`,
+      description,
+    },
+  }
+}
 
 export default async function PublicBoard({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
