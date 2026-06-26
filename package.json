@@ -6,7 +6,7 @@
     "test": "vitest run",
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "drizzle-kit migrate && next build",
+    "vercel-build": "node scripts/migrate.mjs && next build",
     "start": "next start",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
