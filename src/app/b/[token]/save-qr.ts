@@ -35,15 +35,11 @@ const QR_COLOR = { dark: '#111111', light: '#ffffff' }
 export const renderQrDataUrl = (spayd: string): Promise<string> =>
   QRCode.toDataURL(spayd, { width: 720, margin: 1, color: QR_COLOR })
 
-// Canvas-free SVG fallback for display when canvas/toDataURL is unavailable (some in-app
-// WebViews). Not long-pressable, but keeps the payment QR scannable everywhere. The lib's
-// SVG carries only a viewBox, so we inject responsive sizing or it can collapse to 0/300x150.
-export const renderQrSvg = async (spayd: string): Promise<string> => {
-  const svg = await QRCode.toString(spayd, { type: 'svg', margin: 1, color: QR_COLOR })
-  // Match "<svg" without a trailing char so it survives "<svg ", "<svg>" or "<svg\n".
-  // Fill the (square) wrapper rather than relying on the viewBox intrinsic ratio.
-  return svg.replace('<svg', '<svg style="width:100%;height:100%;display:block"')
-}
+// Canvas-free SVG QR for display when canvas/toDataURL is unavailable (some in-app WebViews).
+// Not long-pressable, but keeps the payment QR scannable everywhere. Render it via <QrSvg>,
+// which handles responsive sizing.
+export const renderQrSvg = (spayd: string): Promise<string> =>
+  QRCode.toString(spayd, { type: 'svg', margin: 1, color: QR_COLOR })
 
 // One-shot probe: is canvas usable here? Catches both missing getContext and privacy-hardened
 // browsers where toDataURL returns a blank string instead of a PNG. Lets callers skip the doomed

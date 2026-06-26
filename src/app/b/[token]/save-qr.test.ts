@@ -25,10 +25,10 @@ describe('qrFileName', () => {
 })
 
 describe('renderQrSvg', () => {
-  test('vrací inline SVG s responzivní velikostí', async () => {
+  test('vrací inline SVG (sizing řeší QrSvg)', async () => {
     const svg = await renderQrSvg('SPD*1.0*ACC:CZ0000')
     expect(svg.startsWith('<svg')).toBe(true)
-    expect(svg).toContain('width:100%')
+    expect(svg).toContain('viewBox')
   })
 })
 

@@ -9,6 +9,7 @@ import { signAction } from './sign-action'
 import { renderQrDataUrl, renderQrSvg, renderQrCard, shareOrDownload, qrFileName, canUseCanvas } from './save-qr'
 import ui from '@/design/ui.module.css'
 import s from './BoardClient.module.css'
+import QrSvg from '@/components/QrSvg'
 
 // Debounce the (heavier) branded-card render so it doesn't run on every keystroke.
 const CARD_DEBOUNCE_MS = 300
@@ -177,15 +178,9 @@ export default function BoardClient(props: Props) {
 
             {qr?.kind === 'png' && <img className={s.qrImg} src={qr.url} alt="QR Platba" />}
             {qr?.kind === 'svg' && (
-              // Square box so the inline SVG can't collapse in old WebViews.
               <div className={s.qrSvgBox}>
                 <div className={s.qrSvgPad} />
-                <div
-                  className={s.qrSvgInner}
-                  role="img"
-                  aria-label="QR Platba"
-                  dangerouslySetInnerHTML={{ __html: qr.markup }}
-                />
+                <QrSvg className={s.qrSvgInner} markup={qr.markup} label="QR Platba" />
               </div>
             )}
 
