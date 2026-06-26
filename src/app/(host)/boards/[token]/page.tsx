@@ -19,6 +19,7 @@ export default async function BoardDetail({ params }: { params: Promise<{ token:
         token={token}
         initialTitle={board.title}
         initialItems={board.items.map((it) => ({ name: it.name, priceHaler: it.priceHaler }))}
+        initialTheme={board.theme}
       />
       <SharePanel token={token} />
       <h2>Kdo se podepsal</h2>

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isValidCzAccount } from './iban'
+import { DEFAULT_THEME, THEME_KEYS } from '@/design/themes'
 
 export const MAX_TITLE = 80
 export const MAX_ITEM_NAME = 60
@@ -23,6 +24,7 @@ export const boardSchema = z.object({
       }),
     )
     .max(MAX_ITEMS),
+  theme: z.enum(THEME_KEYS).default(DEFAULT_THEME),
 })
 
 export const signatureSchema = z.object({

@@ -1,3 +1,8 @@
-export default function BoardNotFound() {
-  return <main style={{ padding: '2rem' }}><h1>Tento board neexistuje nebo byl smazán.</h1></main>
+export default function NotFound() {
+  return (
+    <main style={{ maxWidth: 480, margin: '0 auto', padding: '3rem 1rem', textAlign: 'center' }}>
+      <h1>Tahle akce tu není 🤔</h1>
+      <p>Odkaz nejspíš vypršel nebo byl smazán. Zkus si ho nechat poslat znovu.</p>
+    </main>
+  )
 }

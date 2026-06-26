@@ -1,0 +1,121 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 14px 18px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btnPrimary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-accent);
+}
+
+.btnGhost {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.field {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 13px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.field:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.label {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 18px 2px 8px;
+}
+
+.chip {
+  flex: 1;
+  min-height: var(--tap);
+  padding: 11px 0;
+  text-align: center;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.chipOn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stepBtn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.stepMinus {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.stepPlus {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.q {
+  min-width: 24px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+}

@@ -1,6 +1,8 @@
 import {
   boolean, integer, jsonb, pgTable, primaryKey, text, timestamp,
 } from 'drizzle-orm/pg-core'
+// Relative import (not the @/ alias) so drizzle-kit's loader resolves it during migrations.
+import { DEFAULT_THEME } from '../design/themes'
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -20,6 +22,7 @@ export const boards = pgTable('boards', {
   currency: text('currency').notNull().default('CZK'),
   variableSymbol: text('variable_symbol').notNull(),
   tipPercents: jsonb('tip_percents').$type<number[]>().notNull().default([0, 5, 10]),
+  theme: text('theme').notNull().default(DEFAULT_THEME),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
