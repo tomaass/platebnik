@@ -1,10 +1,12 @@
 import * as R from 'remeda'
 import type { Haler } from './types'
 
+// Drop diacritics (e.g. "Příliš" → "Prilis"). Shared by the SPAYD message and the saved QR file name.
+export const stripDiacritics = (input: string): string =>
+  input.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+
 export const sanitizeSpaydMsg = (input: string): string =>
-  input
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '') // odstraň diakritická znaménka
+  stripDiacritics(input)
     .replace(/[^A-Za-z0-9 .,_-]/g, '')
     .slice(0, 60)
 

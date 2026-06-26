@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import QRCode from 'qrcode'
 import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
+import { renderQrDataUrl, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
+
+// Debounce the (heavier) branded-card render so it doesn't run on every keystroke.
+const CARD_DEBOUNCE_MS = 300
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -20,9 +23,12 @@ interface Props {
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
   const [tipKc, setTipKc] = useState('')
-  const [qr, setQr] = useState('')
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [card, setCard] = useState<Blob | null>(null)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
+  const [qrError, setQrError] = useState<string | undefined>(undefined)
+  const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
 
@@ -36,7 +42,7 @@ export default function BoardClient(props: Props) {
   )
 
   const subtotal = itemsSubtotal(entries)
-  // Dýško: tlačítka % jen předvyplní input "vlastní Kč", který je jediný zdroj pravdy.
+  // Tip: the % buttons only pre-fill the "custom Kč" input, which is the single source of truth.
   const tipKcNum = Number(tipKc)
   const tipHaler = Number.isFinite(tipKcNum) && tipKcNum > 0 ? Math.round(tipKcNum * 100) : 0
   const total = selectionTotal({ entries, tipHaler })
@@ -46,17 +52,52 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // Regenerace QR při každé změně — čistě klientsky, žádný server request.
+  // Live QR for display — plain (no branding), generated immediately so it tracks the total
+  // closely. data: URL is long-pressable on iOS. AbortController discards a stale result.
   useEffect(() => {
     if (total <= 0) {
-      setQr('')
+      setQrUrl(null)
       return
     }
-    QRCode.toString(spayd, { type: 'svg', margin: 1 }).then(setQr)
+    const ac = new AbortController()
+    setQrError(undefined)
+    renderQrDataUrl(spayd)
+      .then((url) => { if (!ac.signal.aborted) setQrUrl(url) })
+      .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
+    return () => ac.abort()
   }, [spayd, total])
+
+  // Branded card for the "Uložit QR" button — pre-rendered (debounced) so share() can run
+  // within the click gesture on iOS. Cleared immediately on any change so a stale card (wrong
+  // amount) can never be saved; the button is disabled until the fresh card is ready.
+  useEffect(() => {
+    setCard(null)
+    if (total <= 0) return
+    const ac = new AbortController()
+    const timer = setTimeout(() => {
+      renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+        .then((blob) => { if (!ac.signal.aborted) setCard(blob) })
+        .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
+    }, CARD_DEBOUNCE_MS)
+    return () => { ac.abort(); clearTimeout(timer) }
+  }, [spayd, total, props.title])
 
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
+
+  const saveQr = async () => {
+    if (!card) return
+    setSaving(true)
+    setQrError(undefined)
+    try {
+      // card is ready → share() runs within the gesture (iOS user activation).
+      await shareOrDownload(card, qrFileName(props.title))
+    } catch {
+      setQrError('QR se nepodařilo uložit, zkus to znovu.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const sign = async () => {
     setSignError(undefined)
@@ -101,8 +142,23 @@ export default function BoardClient(props: Props) {
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {qr
-        ? <div role="img" dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR Platba" />
+      {qrUrl
+        ? (
+          <>
+            <img
+              src={qrUrl}
+              alt="QR platba"
+              style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
+            />
+            <button onClick={saveQr} disabled={saving || !card}>
+              {saving ? 'Ukládám…' : 'Uložit QR'}
+            </button>
+            <p style={{ fontSize: '0.85rem', color: '#555' }}>
+              Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" pro QR s logem. Pak QR načti v bance z galerie.
+            </p>
+            {qrError && <p style={{ color: 'red' }}>{qrError}</p>}
+          </>
+        )
         : <p>Vyber položky nebo zadej dýško.</p>}
 
       {!signed
