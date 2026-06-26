@@ -70,7 +70,8 @@ const downloadBlob = (blob: Blob, fileName: string): void => {
   a.href = url
   a.download = fileName
   a.click()
-  URL.revokeObjectURL(url)
+  // Odložit revoke o tick — synchronní revoke umí v některých prohlížečích (Firefox desktop) stažení zrušit.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 export const saveQrPng = async (input: QrCardInput): Promise<void> => {
