@@ -5,13 +5,10 @@ import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
-import { renderQrCard, shareOrDownload, qrFileName, CARD_GEOMETRY } from './save-qr'
-import type { QrCardOutput } from './save-qr'
+import { renderQrDataUrl, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
 
-// On the page we show only the QR crop (without branding). The <img> is the full
-// card, though, so an iOS long-press saves the branded source. Crop = a QR-sized window.
-const QR_DISPLAY = 280
-const SCALE = QR_DISPLAY / CARD_GEOMETRY.qr.size
+// Debounce the (heavier) branded-card render so it doesn't run on every keystroke.
+const CARD_DEBOUNCE_MS = 300
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -26,7 +23,8 @@ interface Props {
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
   const [tipKc, setTipKc] = useState('')
-  const [card, setCard] = useState<QrCardOutput | null>(null)
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [card, setCard] = useState<Blob | null>(null)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
   const [qrError, setQrError] = useState<string | undefined>(undefined)
@@ -54,24 +52,34 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // On every change, generate the branded card client-side (dataUrl for the <img> +
-  // blob for sharing). Prepared ahead of time so share() can be called within the
-  // gesture on iOS. No server request.
+  // Live QR for display — plain (no branding), generated immediately so it tracks the total
+  // closely. data: URL is long-pressable on iOS. AbortController discards a stale result.
   useEffect(() => {
     if (total <= 0) {
-      setCard(null)
+      setQrUrl(null)
       return
     }
-    let cancelled = false // standard async-effect cleanup — discard a stale result
+    const ac = new AbortController()
     setQrError(undefined)
-    renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
-      .then((result) => {
-        if (!cancelled) setCard(result)
-      })
-      .catch(() => {
-        if (!cancelled) setQrError('QR se nepodařilo vygenerovat.')
-      })
-    return () => { cancelled = true }
+    renderQrDataUrl(spayd)
+      .then((url) => { if (!ac.signal.aborted) setQrUrl(url) })
+      .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
+    return () => ac.abort()
+  }, [spayd, total])
+
+  // Branded card for the "Uložit QR" button — pre-rendered (debounced) so share() can run
+  // within the click gesture on iOS. Cleared immediately on any change so a stale card (wrong
+  // amount) can never be saved; the button is disabled until the fresh card is ready.
+  useEffect(() => {
+    setCard(null)
+    if (total <= 0) return
+    const ac = new AbortController()
+    const timer = setTimeout(() => {
+      renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+        .then((blob) => { if (!ac.signal.aborted) setCard(blob) })
+        .catch(() => { if (!ac.signal.aborted) setQrError('QR se nepodařilo vygenerovat.') })
+    }, CARD_DEBOUNCE_MS)
+    return () => { ac.abort(); clearTimeout(timer) }
   }, [spayd, total, props.title])
 
   const setItemQty = (id: string, delta: number) =>
@@ -82,8 +90,8 @@ export default function BoardClient(props: Props) {
     setSaving(true)
     setQrError(undefined)
     try {
-      // card.blob is ready → share() runs within the gesture (iOS user activation).
-      await shareOrDownload(card.blob, qrFileName(props.title))
+      // card is ready → share() runs within the gesture (iOS user activation).
+      await shareOrDownload(card, qrFileName(props.title))
     } catch {
       setQrError('QR se nepodařilo uložit, zkus to znovu.')
     } finally {
@@ -134,29 +142,19 @@ export default function BoardClient(props: Props) {
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {card
+      {qrUrl
         ? (
           <>
-            <div
-              style={{ width: QR_DISPLAY, height: QR_DISPLAY, maxWidth: '100%', overflow: 'hidden', position: 'relative' }}
-            >
-              <img
-                src={card.dataUrl}
-                alt="QR platba"
-                style={{
-                  position: 'absolute',
-                  left: -CARD_GEOMETRY.qr.x * SCALE,
-                  top: -CARD_GEOMETRY.qr.y * SCALE,
-                  width: CARD_GEOMETRY.width * SCALE,
-                  maxWidth: 'none',
-                }}
-              />
-            </div>
-            <button onClick={saveQr} disabled={saving}>
+            <img
+              src={qrUrl}
+              alt="QR platba"
+              style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
+            />
+            <button onClick={saveQr} disabled={saving || !card}>
               {saving ? 'Ukládám…' : 'Uložit QR'}
             </button>
             <p style={{ fontSize: '0.85rem', color: '#555' }}>
-              Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" a sdílej do bankovní aplikace. Pak QR načti v bance z galerie.
+              Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" pro QR s logem. Pak QR načti v bance z galerie.
             </p>
             {qrError && <p style={{ color: 'red' }}>{qrError}</p>}
           </>

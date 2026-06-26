@@ -6,6 +6,10 @@ describe('qrCaption', () => {
     expect(qrCaption({ title: 'Pátek u Toma', amountFormatted: '350.00' }))
       .toBe('Pátek u Toma • 350.00 Kč')
   })
+  test('ořízne dlouhý název elipsou (ať nepřeteče kartu)', () => {
+    const caption = qrCaption({ title: 'Oslava narozenin Tomáše a Barbory u nás doma', amountFormatted: '1234.00' })
+    expect(caption).toBe('Oslava narozenin Tomáše a B… • 1234.00 Kč')
+  })
 })
 
 describe('qrFileName', () => {
