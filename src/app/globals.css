@@ -1,0 +1,80 @@
+:root {
+  --radius-sm: 9px;
+  --radius: 14px;
+  --radius-lg: 24px;
+  --shadow-card: 0 14px 32px rgba(43, 33, 24, 0.16);
+  --shadow-accent: 0 8px 18px rgba(0, 0, 0, 0.18);
+  --tap: 44px;
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+}
+
+[data-theme='sunset'] {
+  --grad: linear-gradient(135deg, #ff9a3d, #f0407e);
+  --accent: #f0407e;
+  --accent-ink: #ffffff;
+  --bg: #fff9f7;
+  --surface: #ffffff;
+  --surface-alt: #fff4f6;
+  --border: #ffe1e8;
+  --text: #2a1620;
+  --text-muted: #9a7b8a;
+}
+
+[data-theme='green'] {
+  --grad: linear-gradient(135deg, #34c759, #0e9e6e);
+  --accent: #0e9e6e;
+  --accent-ink: #ffffff;
+  --bg: #f6fbf3;
+  --surface: #ffffff;
+  --surface-alt: #f4faf0;
+  --border: #d9efdf;
+  --text: #16331f;
+  --text-muted: #5e6b53;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0 0 0.5em;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  color: var(--text);
+}
