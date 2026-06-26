@@ -1,0 +1,93 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.itemName {
+  flex: 1;
+}
+
+.itemPrice {
+  width: 96px;
+}
+
+.del {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.add {
+  width: 100%;
+  border: 1.5px dashed var(--accent);
+  background: var(--surface-alt);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 2px 0;
+}
+
+.themes {
+  display: flex;
+  gap: 10px;
+}
+
+.theme {
+  flex: 1;
+  border-radius: var(--radius);
+  padding: 6px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.themeOn {
+  border-color: var(--accent);
+}
+
+.themePrev {
+  height: 54px;
+  border-radius: var(--radius-sm);
+  background: var(--grad);
+}
+
+.themeName {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  padding: 7px 0 3px;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.save {
+  width: 100%;
+  margin-top: 16px;
+}
