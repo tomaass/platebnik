@@ -8,8 +8,8 @@ import { signAction } from './sign-action'
 import { renderQrCard, shareOrDownload, qrFileName, CARD_GEOMETRY } from './save-qr'
 import type { QrCardOutput } from './save-qr'
 
-// Na stránce ukazujeme jen výřez QR (bez brandingu). <img> je ale celá karta,
-// takže iOS long-press uloží zdroj s brandingem. Výřez = okno o velikosti QR.
+// On the page we show only the QR crop (without branding). The <img> is the full
+// card, though, so an iOS long-press saves the branded source. Crop = a QR-sized window.
 const QR_DISPLAY = 280
 const SCALE = QR_DISPLAY / CARD_GEOMETRY.qr.size
 
@@ -44,7 +44,7 @@ export default function BoardClient(props: Props) {
   )
 
   const subtotal = itemsSubtotal(entries)
-  // Dýško: tlačítka % jen předvyplní input "vlastní Kč", který je jediný zdroj pravdy.
+  // Tip: the % buttons only pre-fill the "custom Kč" input, which is the single source of truth.
   const tipKcNum = Number(tipKc)
   const tipHaler = Number.isFinite(tipKcNum) && tipKcNum > 0 ? Math.round(tipKcNum * 100) : 0
   const total = selectionTotal({ entries, tipHaler })
@@ -54,15 +54,15 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // Při každé změně klientsky vygenerujeme brandovanou kartu (dataUrl pro <img> +
-  // blob pro sdílení). Chystá se dopředu, aby na iOS šlo share() zavolat hned
-  // v gestu. Žádný server request.
+  // On every change, generate the branded card client-side (dataUrl for the <img> +
+  // blob for sharing). Prepared ahead of time so share() can be called within the
+  // gesture on iOS. No server request.
   useEffect(() => {
     if (total <= 0) {
       setCard(null)
       return
     }
-    let cancelled = false // standardní cleanup pro async efekt — zahodí zastaralý výsledek
+    let cancelled = false // standard async-effect cleanup — discard a stale result
     setQrError(undefined)
     renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
       .then((result) => {
@@ -82,7 +82,7 @@ export default function BoardClient(props: Props) {
     setSaving(true)
     setQrError(undefined)
     try {
-      // card.blob je hotový → share() se zavolá hned v gestu (iOS user-activation).
+      // card.blob is ready → share() runs within the gesture (iOS user activation).
       await shareOrDownload(card.blob, qrFileName(props.title))
     } catch {
       setQrError('QR se nepodařilo uložit, zkus to znovu.')

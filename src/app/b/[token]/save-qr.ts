@@ -32,8 +32,8 @@ const QR_Y = PADDING + BRAND_H + URL_H + GAP
 const CARD_W = QR_SIZE + PADDING * 2
 const CARD_H = PADDING + BRAND_H + URL_H + GAP + QR_SIZE + GAP + CAPTION_H + PADDING
 
-// Geometrie karty — umožní v UI vykreslit jen výřez QR (bez brandingu), zatímco
-// long-press uloží celý zdrojový obrázek (kartu s brandingem).
+// Card geometry — lets the UI render just the QR crop (without branding) while
+// long-press saves the full source image (the branded card).
 export const CARD_GEOMETRY = {
   width: CARD_W,
   height: CARD_H,
@@ -41,8 +41,8 @@ export const CARD_GEOMETRY = {
 } as const
 
 export interface QrCardOutput {
-  dataUrl: string // pro <img> na stránce (data: URL je na iOS spolehlivě long-pressovatelný)
-  blob: Blob // pro tlačítko Uložit (Web Share / download)
+  dataUrl: string // for the on-page <img> (data: URLs are reliably long-pressable on iOS)
+  blob: Blob // for the Save button (Web Share / download)
 }
 
 export const renderQrCard = async (input: QrCardInput): Promise<QrCardOutput> => {
@@ -56,7 +56,7 @@ export const renderQrCard = async (input: QrCardInput): Promise<QrCardOutput> =>
   card.width = CARD_W
   card.height = CARD_H
   const ctx = card.getContext('2d')
-  if (!ctx) throw new Error('Canvas 2D context není dostupný.')
+  if (!ctx) throw new Error('Canvas 2D context is unavailable.')
 
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, CARD_W, CARD_H)
@@ -78,7 +78,7 @@ export const renderQrCard = async (input: QrCardInput): Promise<QrCardOutput> =>
 
   const blob = await new Promise<Blob>((resolve, reject) =>
     card.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error('Nepodařilo se vytvořit PNG.'))),
+      (b) => (b ? resolve(b) : reject(new Error('Failed to create PNG.'))),
       'image/png',
     ),
   )
@@ -92,14 +92,14 @@ const downloadBlob = (blob: Blob, fileName: string): void => {
   a.href = url
   a.download = fileName
   a.click()
-  // Odložit revoke o tick — synchronní revoke umí v některých prohlížečích (Firefox desktop) stažení zrušit.
+  // Defer revoke by a tick — a synchronous revoke can cancel the download in some browsers (Firefox desktop).
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-// Sdílí předem připravený blob. Volá se přímo z click handleru (bez await před share()),
-// aby na iOS Safari zůstala zachovaná user-activation a otevřel se share sheet.
-// Pozn.: Web Share API je dostupné jen v secure contextu (HTTPS / localhost) — na plain HTTP
-// je navigator.share undefined a kód spadne na download fallback.
+// Shares a pre-rendered blob. Called directly from the click handler (no await before share())
+// so iOS Safari keeps the user activation and opens the share sheet.
+// Note: the Web Share API is only available in a secure context (HTTPS / localhost) — on plain HTTP
+// navigator.share is undefined and the code falls back to download.
 export const shareOrDownload = async (blob: Blob, fileName: string): Promise<void> => {
   const file = new File([blob], fileName, { type: 'image/png' })
 
@@ -108,7 +108,7 @@ export const shareOrDownload = async (blob: Blob, fileName: string): Promise<voi
       await navigator.share({ files: [file], title: 'Platebník — QR platba' })
       return
     } catch (err) {
-      // Uživatel zavřel share sheet → nedělat nic. Jiná chyba → fallback na download.
+      // User dismissed the share sheet → do nothing. Any other error → fall back to download.
       if (err instanceof DOMException && err.name === 'AbortError') return
     }
   }
