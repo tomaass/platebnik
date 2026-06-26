@@ -20,13 +20,15 @@ export const qrFileName = (title: string): string => {
 }
 
 const FONT_STACK = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+const BRAND_URL = 'platebnik.cz'
 const PADDING = 48
 const QR_SIZE = 480
-const BRAND_H = 44
+const BRAND_H = 40
+const URL_H = 30
 const CAPTION_H = 40
-const GAP = 24
+const GAP = 20
 const CARD_W = QR_SIZE + PADDING * 2
-const CARD_H = PADDING + BRAND_H + GAP + QR_SIZE + GAP + CAPTION_H + PADDING
+const CARD_H = PADDING + BRAND_H + URL_H + GAP + QR_SIZE + GAP + CAPTION_H + PADDING
 
 export const renderQrCard = async (input: QrCardInput): Promise<Blob> => {
   const qrCanvas = await QRCode.toCanvas(input.spayd, {
@@ -47,9 +49,13 @@ export const renderQrCard = async (input: QrCardInput): Promise<Blob> => {
   ctx.textAlign = 'center'
   ctx.fillStyle = '#111111'
   ctx.font = `600 28px ${FONT_STACK}`
-  ctx.fillText('Platebník', CARD_W / 2, PADDING + 30)
+  ctx.fillText('Platebník', CARD_W / 2, PADDING + 28)
 
-  const qrY = PADDING + BRAND_H + GAP
+  ctx.fillStyle = '#888888'
+  ctx.font = `400 20px ${FONT_STACK}`
+  ctx.fillText(BRAND_URL, CARD_W / 2, PADDING + BRAND_H + 20)
+
+  const qrY = PADDING + BRAND_H + URL_H + GAP
   ctx.drawImage(qrCanvas, PADDING, qrY, QR_SIZE, QR_SIZE)
 
   ctx.fillStyle = '#555555'
@@ -74,9 +80,12 @@ const downloadBlob = (blob: Blob, fileName: string): void => {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-export const saveQrPng = async (input: QrCardInput): Promise<void> => {
-  const blob = await renderQrCard(input)
-  const file = new File([blob], qrFileName(input.title), { type: 'image/png' })
+// Sdílí předem připravený blob. Volá se přímo z click handleru (bez await před share()),
+// aby na iOS Safari zůstala zachovaná user-activation a otevřel se share sheet.
+// Pozn.: Web Share API je dostupné jen v secure contextu (HTTPS / localhost) — na plain HTTP
+// je navigator.share undefined a kód spadne na download fallback.
+export const shareOrDownload = async (blob: Blob, fileName: string): Promise<void> => {
+  const file = new File([blob], fileName, { type: 'image/png' })
 
   if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
     try {
@@ -88,5 +97,5 @@ export const saveQrPng = async (input: QrCardInput): Promise<void> => {
     }
   }
 
-  downloadBlob(blob, file.name)
+  downloadBlob(blob, fileName)
 }

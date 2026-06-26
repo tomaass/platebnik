@@ -77,6 +77,27 @@ Pod tlačítkem hint: *„Ulož QR a načti ho v bankovní appce z galerie."*
   načíst QR v bankovní appce z galerie.
 - Volitelně unit test na sestavení popisku / názvu souboru, pokud bude netriviální.
 
+## Revize po testu na mobilu (2026-06-26)
+
+Zpětná vazba z reálného iPhonu si vynutila tři změny:
+
+1. **Karta obsahuje `platebnik.cz`** — pod wordmarkem „Platebník" přibyl řádek
+   s URL (šedý, menší). V samotném QR být nemůže (je to SPAYD platební řetězec).
+2. **Zobrazený QR je nově `<img>` PNG karty, ne inline SVG.** iOS Safari na inline
+   SVG nenabízí long-press „Uložit obrázek"; na `<img>` ano (Přidat do Fotek /
+   Sdílet). Tím long-press dělá „stejnou akci" jako tlačítko, nativně. Karta se
+   proto generuje **eager** v `useEffect` (blob + object URL drží `BoardClient`),
+   ne lazy až na klik — img ji stejně potřebuje vykreslit.
+3. **Tlačítko sdílí předpřipravený blob** (`shareOrDownload(blob, fileName)`),
+   takže `navigator.share()` se volá hned v gestu bez předchozího `await` →
+   zachovaná user-activation na iOS.
+
+**Secure context:** Web Share API (`navigator.share`/`canShare` se souborem)
+funguje jen na **HTTPS** (nebo `localhost`). Na plain-HTTP LAN adrese
+(`http://192.168.x.x`) je nedostupné → tlačítko spadne na download (Files).
+Share sheet jde ověřit jen přes HTTPS (ngrok / Vercel preview). Long-press
+funguje i přes HTTP.
+
 ## Mimo scope (až bude design/logo)
 
 - Logo do středu QR (s přepnutím error-correction na `H`).

@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import QRCode from 'qrcode'
 import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
-import { saveQrPng } from './save-qr'
+import { renderQrCard, shareOrDownload, qrFileName } from './save-qr'
+
+interface QrCard { url: string; blob: Blob }
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -21,7 +22,7 @@ interface Props {
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
   const [tipKc, setTipKc] = useState('')
-  const [qr, setQr] = useState('')
+  const [card, setCard] = useState<QrCard | null>(null)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
   const [qrError, setQrError] = useState<string | undefined>(undefined)
@@ -49,23 +50,42 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // Regenerace QR při každé změně — čistě klientsky, žádný server request.
+  // Regenerace QR karty (PNG) při každé změně — čistě klientsky, žádný server request.
+  // PNG kvůli iOS: <img> jde podržet a uložit do Fotek; SVG ne.
   useEffect(() => {
     if (total <= 0) {
-      setQr('')
+      setCard(null)
       return
     }
-    QRCode.toString(spayd, { type: 'svg', margin: 1 }).then(setQr)
-  }, [spayd, total])
+    let cancelled = false // standardní cleanup pro async efekt — zahodí zastaralý výsledek
+    setQrError(undefined)
+    renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+      .then((blob) => {
+        if (!cancelled) setCard({ url: URL.createObjectURL(blob), blob })
+      })
+      .catch(() => {
+        if (!cancelled) setQrError('QR se nepodařilo vygenerovat.')
+      })
+    return () => { cancelled = true }
+  }, [spayd, total, props.title])
+
+  // Object URL uvolnit, jakmile ho vystřídá nový (nebo při odmontování).
+  useEffect(() => {
+    const url = card?.url
+    if (!url) return
+    return () => URL.revokeObjectURL(url)
+  }, [card])
 
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
 
   const saveQr = async () => {
+    if (!card) return
     setSaving(true)
     setQrError(undefined)
     try {
-      await saveQrPng({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+      // card.blob je hotový → share() se zavolá hned v gestu (iOS user-activation).
+      await shareOrDownload(card.blob, qrFileName(props.title))
     } catch {
       setQrError('QR se nepodařilo uložit, zkus to znovu.')
     } finally {
@@ -116,15 +136,19 @@ export default function BoardClient(props: Props) {
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {qr
+      {card
         ? (
           <>
-            <div role="img" dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR Platba" />
+            <img
+              src={card.url}
+              alt="QR platba Platebník"
+              style={{ width: '100%', maxWidth: 320, height: 'auto', display: 'block' }}
+            />
             <button onClick={saveQr} disabled={saving}>
               {saving ? 'Ukládám…' : 'Uložit QR'}
             </button>
             <p style={{ fontSize: '0.85rem', color: '#555' }}>
-              Ulož QR a načti ho v bankovní appce z galerie.
+              Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" a sdílej do bankovní aplikace. Pak QR načti v bance z galerie.
             </p>
             {qrError && <p style={{ color: 'red' }}>{qrError}</p>}
           </>
