@@ -30,6 +30,15 @@ const GAP = 20
 const CARD_W = QR_SIZE + PADDING * 2
 const CARD_H = PADDING + BRAND_H + URL_H + GAP + QR_SIZE + GAP + CAPTION_H + PADDING
 
+// Holý QR pro zobrazení na stránce (bez brandingu). data: URL je na iOS spolehlivě
+// long-pressovatelný ("Přidat do Fotek"), na rozdíl od blob:/canvas obrázků.
+export const renderQrDataUrl = (spayd: string): Promise<string> =>
+  QRCode.toDataURL(spayd, {
+    width: QR_SIZE,
+    margin: 1,
+    color: { dark: '#111111', light: '#ffffff' },
+  })
+
 export const renderQrCard = async (input: QrCardInput): Promise<Blob> => {
   const qrCanvas = await QRCode.toCanvas(input.spayd, {
     width: QR_SIZE,

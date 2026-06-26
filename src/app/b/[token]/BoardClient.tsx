@@ -5,9 +5,7 @@ import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
-import { renderQrCard, shareOrDownload, qrFileName } from './save-qr'
-
-interface QrCard { url: string; blob: Blob }
+import { renderQrDataUrl, renderQrCard, shareOrDownload, qrFileName } from './save-qr'
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -22,7 +20,8 @@ interface Props {
 export default function BoardClient(props: Props) {
   const [qty, setQty] = useState<Record<string, number>>({})
   const [tipKc, setTipKc] = useState('')
-  const [card, setCard] = useState<QrCard | null>(null)
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [cardBlob, setCardBlob] = useState<Blob | null>(null)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
   const [qrError, setQrError] = useState<string | undefined>(undefined)
@@ -50,18 +49,25 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // Regenerace QR karty (PNG) při každé změně — čistě klientsky, žádný server request.
-  // PNG kvůli iOS: <img> jde podržet a uložit do Fotek; SVG ne.
+  // Při každé změně klientsky generujeme dvě věci: holý QR (data URL) pro zobrazení
+  // a brandovanou kartu (blob) pro uložení. Karta se chystá dopředu, aby na iOS šlo
+  // share() zavolat hned v gestu. Žádný server request.
   useEffect(() => {
     if (total <= 0) {
-      setCard(null)
+      setQrUrl(null)
+      setCardBlob(null)
       return
     }
     let cancelled = false // standardní cleanup pro async efekt — zahodí zastaralý výsledek
     setQrError(undefined)
-    renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
-      .then((blob) => {
-        if (!cancelled) setCard({ url: URL.createObjectURL(blob), blob })
+    Promise.all([
+      renderQrDataUrl(spayd),
+      renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) }),
+    ])
+      .then(([url, blob]) => {
+        if (cancelled) return
+        setQrUrl(url)
+        setCardBlob(blob)
       })
       .catch(() => {
         if (!cancelled) setQrError('QR se nepodařilo vygenerovat.')
@@ -69,23 +75,16 @@ export default function BoardClient(props: Props) {
     return () => { cancelled = true }
   }, [spayd, total, props.title])
 
-  // Object URL uvolnit, jakmile ho vystřídá nový (nebo při odmontování).
-  useEffect(() => {
-    const url = card?.url
-    if (!url) return
-    return () => URL.revokeObjectURL(url)
-  }, [card])
-
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
 
   const saveQr = async () => {
-    if (!card) return
+    if (!cardBlob) return
     setSaving(true)
     setQrError(undefined)
     try {
-      // card.blob je hotový → share() se zavolá hned v gestu (iOS user-activation).
-      await shareOrDownload(card.blob, qrFileName(props.title))
+      // cardBlob je hotový → share() se zavolá hned v gestu (iOS user-activation).
+      await shareOrDownload(cardBlob, qrFileName(props.title))
     } catch {
       setQrError('QR se nepodařilo uložit, zkus to znovu.')
     } finally {
@@ -136,15 +135,15 @@ export default function BoardClient(props: Props) {
       </section>
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {card
+      {qrUrl
         ? (
           <>
             <img
-              src={card.url}
-              alt="QR platba Platebník"
+              src={qrUrl}
+              alt="QR platba"
               style={{ width: '100%', maxWidth: 320, height: 'auto', display: 'block' }}
             />
-            <button onClick={saveQr} disabled={saving}>
+            <button onClick={saveQr} disabled={saving || !cardBlob}>
               {saving ? 'Ukládám…' : 'Uložit QR'}
             </button>
             <p style={{ fontSize: '0.85rem', color: '#555' }}>
