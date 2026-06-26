@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import s from '../host.module.css'
+import QrSvg from '@/components/QrSvg'
 
 export default function SharePanel({ token }: { token: string }) {
   const [svg, setSvg] = useState('')
@@ -17,8 +18,7 @@ export default function SharePanel({ token }: { token: string }) {
     <div className={s.share}>
       <div className={s.shareTitle}>Hotovo! Nasdílej partě 🎉</div>
       <div className={s.shareRow}>
-        {/* dangerouslySetInnerHTML je zde bezpečné — svg je výstup qrcode knihovny z naší vlastní URL, ne uživatelský vstup */}
-        <div className={s.shareQr} role="img" dangerouslySetInnerHTML={{ __html: svg }} aria-label="QR kód na board" />
+        <QrSvg className={s.shareQr} markup={svg} label="QR kód na board" />
         <a className={s.shareUrl} href={url}>{url}</a>
       </div>
     </div>
