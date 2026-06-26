@@ -78,7 +78,8 @@ export const updateBoard = async (
 ): Promise<void> => {
   await assertOwner(token, userId)
   await db.update(boards)
-    .set({ title: input.title, theme: input.theme ?? DEFAULT_THEME, updatedAt: new Date() })
+    // Only overwrite theme when explicitly provided — an omitted theme must not silently reset it.
+    .set({ title: input.title, ...(input.theme ? { theme: input.theme } : {}), updatedAt: new Date() })
     .where(eq(boards.token, token))
   await db.delete(items).where(eq(items.boardId, token))
   if (input.items.length > 0) await db.insert(items).values(itemRows(token, input.items))

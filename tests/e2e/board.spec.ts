@@ -27,8 +27,9 @@ test('host vybere položku, vidí cenu a QR, podepíše se', async ({ page }) =>
   await page.goto(`/b/${token}`)
   await expect(page.getByText('E2E Gril')).toBeVisible()
   await page.getByRole('button', { name: /Přidat/ }).first().click()
-  await expect(page.getByText('Celkem: 45.00 Kč')).toBeVisible()
-  await expect(page.getByLabel('QR Platba')).toBeVisible()
+  // Visible payment amount in the pay card (the source-of-truth total a user sees).
+  await expect(page.getByText('45.00 Kč').first()).toBeVisible()
+  await expect(page.getByRole('img', { name: 'QR Platba' })).toBeVisible()
   await page.getByPlaceholder(/Jméno/).fill('Pepa')
   await page.getByRole('button', { name: 'Podepsat se' }).click()
   await expect(page.getByText('Díky, podpis odeslán!')).toBeVisible()

@@ -75,7 +75,7 @@ export default function BoardEditor({
             className={`${s.theme} ${theme === t.key ? s.themeOn : ''}`}
             onClick={() => setTheme(t.key)}
             role="button" tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setTheme(t.key) }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTheme(t.key) } }}
           >
             <div className={s.themePrev} />
             <div className={s.themeName}>{t.label}{theme === t.key ? ' ✓' : ''}</div>
