@@ -26,10 +26,10 @@ test.afterAll(async () => {
 test('host vybere položku, vidí cenu a QR, podepíše se', async ({ page }) => {
   await page.goto(`/b/${token}`)
   await expect(page.getByText('E2E Gril')).toBeVisible()
-  await page.getByRole('button', { name: '+' }).first().click()
+  await page.getByRole('button', { name: /Přidat/ }).first().click()
   await expect(page.getByText('Celkem: 45.00 Kč')).toBeVisible()
   await expect(page.getByLabel('QR Platba')).toBeVisible()
-  await page.getByPlaceholder('Jméno').fill('Pepa')
+  await page.getByPlaceholder(/Jméno/).fill('Pepa')
   await page.getByRole('button', { name: 'Podepsat se' }).click()
   await expect(page.getByText('Díky, podpis odeslán!')).toBeVisible()
 })

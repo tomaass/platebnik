@@ -11,7 +11,11 @@ export default async function PublicBoard({ params }: { params: Promise<{ token:
   if (!board) notFound()
   const host = await db.query.users.findFirst({ where: eq(users.id, board.userId) })
   if (!host?.bankAccountIban) {
-    return <main style={{ padding: '1rem' }}><p>Hostitel ještě nenastavil platební údaje.</p></main>
+    return (
+      <main data-theme={board.theme} style={{ maxWidth: 480, margin: '0 auto', padding: '2rem 1rem' }}>
+        <p>Hostitel ještě nenastavil platební údaje. Zkus to za chvíli. 🙂</p>
+      </main>
+    )
   }
   return (
     <BoardClient
@@ -21,6 +25,7 @@ export default async function PublicBoard({ params }: { params: Promise<{ token:
       variableSymbol={board.variableSymbol}
       items={board.items.map((it) => ({ id: it.id, name: it.name, priceHaler: it.priceHaler }))}
       tipPercents={board.tipPercents}
+      theme={board.theme}
     />
   )
 }

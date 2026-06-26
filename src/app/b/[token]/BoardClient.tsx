@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import * as R from 'remeda'
+import type { ThemeKey } from '@/design/themes'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
 import { renderQrDataUrl, renderQrSvg, renderQrCard, shareOrDownload, qrFileName, canUseCanvas } from './save-qr'
+import ui from '@/design/ui.module.css'
+import s from './BoardClient.module.css'
 
 // Debounce the (heavier) branded-card render so it doesn't run on every keystroke.
 const CARD_DEBOUNCE_MS = 300
@@ -22,6 +25,7 @@ interface Props {
   variableSymbol: string
   items: ClientItem[]
   tipPercents: number[]
+  theme: ThemeKey
 }
 
 export default function BoardClient(props: Props) {
@@ -100,6 +104,8 @@ export default function BoardClient(props: Props) {
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
 
+  const activeTipKc = (p: number) => String(tipFromPercent(subtotal, p) / 100)
+
   const saveQr = async () => {
     if (!card) return
     setSaving(true)
@@ -121,97 +127,112 @@ export default function BoardClient(props: Props) {
       selectionSnapshot: entries.map((e) => ({ name: e.name, quantity: e.quantity })),
       amountHaler: total, tipHaler,
     })
-    if (res.ok) {
-      setSigned(true)
-    } else {
-      setSignError(res.error ?? 'Nastala chyba, zkuste to znovu.')
-    }
+    if (res.ok) setSigned(true)
+    else setSignError(res.error ?? 'Nastala chyba, zkuste to znovu.')
+  }
+
+  const scrollToPay = () => {
+    if (total <= 0 || typeof document === 'undefined') return
+    document.querySelector(`.${s.payCard}`)?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: '0 auto', padding: '1rem' }}>
-      <h1>{props.title}</h1>
-      {props.items.map((it) => (
-        <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>{it.name} — {formatAmount(it.priceHaler)} Kč</span>
-          <span>
-            <button onClick={() => setItemQty(it.id, -1)}>−</button>
-            {qty[it.id] ?? 0}
-            <button onClick={() => setItemQty(it.id, +1)}>+</button>
-          </span>
+    <main data-theme={props.theme} className={s.page}>
+      <div className={s.inner}>
+        <div className={s.head}>
+          <span style={{ fontSize: 22 }}>🔥</span>
+          <span className={s.title}>{props.title}</span>
         </div>
-      ))}
+        <p className={s.sub}>Co sis dal? Naťukej a zaplať. 🍺</p>
 
-      <section>
-        <h3>Dýško (dobrovolné)</h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        {props.items.map((it) => (
+          <div key={it.id} className={s.row}>
+            <span className={s.rowInfo}>
+              <span className={s.name}>{it.name}</span>
+              <span className={s.price}>{formatAmount(it.priceHaler)} Kč</span>
+            </span>
+            <span className={ui.stepper}>
+              <button className={`${ui.stepBtn} ${ui.stepMinus}`} aria-label={`Ubrat ${it.name}`} onClick={() => setItemQty(it.id, -1)}>−</button>
+              <span className={ui.q}>{qty[it.id] ?? 0}</span>
+              <button className={`${ui.stepBtn} ${ui.stepPlus}`} aria-label={`Přidat ${it.name}`} onClick={() => setItemQty(it.id, +1)}>+</button>
+            </span>
+          </div>
+        ))}
+
+        <span className={ui.label}>Dýško (dobrovolné)</span>
+        <div className={s.tips}>
           {props.tipPercents.map((p) => (
-            <button key={p} onClick={() => setTipKc(String(tipFromPercent(subtotal, p) / 100))}>{p} %</button>
+            <button key={p} className={ui.chip} onClick={() => setTipKc(activeTipKc(p))}>{p} %</button>
           ))}
           <input
-            type="number" inputMode="decimal" placeholder="vlastní Kč"
-            value={tipKc}
-            onChange={(e) => setTipKc(e.target.value)}
+            className={s.tipInput} type="number" inputMode="decimal" placeholder="vlastní Kč"
+            value={tipKc} onChange={(e) => setTipKc(e.target.value)}
           />
         </div>
-      </section>
 
-      <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
-      {qr
-        ? (
-          <>
-            {qr.kind === 'png'
-              ? (
-                <img
-                  src={qr.url}
-                  alt="QR platba"
-                  style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
+        {total > 0 ? (
+          <div className={`${ui.card} ${s.payCard}`}>
+            <span className={s.amtLabel}>K zaplacení vč. dýška</span>
+            <span className={s.amt}>{formatAmount(total)} Kč</span>
+
+            {qr?.kind === 'png' && <img className={s.qrImg} src={qr.url} alt="QR Platba" />}
+            {qr?.kind === 'svg' && (
+              // Square box so the inline SVG can't collapse in old WebViews.
+              <div className={s.qrSvgBox}>
+                <div className={s.qrSvgPad} />
+                <div
+                  className={s.qrSvgInner}
+                  role="img"
+                  aria-label="QR Platba"
+                  dangerouslySetInnerHTML={{ __html: qr.markup }}
                 />
-              )
-              : (
-                // Square box (padding-top:100%) so the inline SVG can't collapse in old WebViews.
-                <div style={{ position: 'relative', width: '100%', maxWidth: 280 }}>
-                  <div style={{ paddingTop: '100%' }} />
-                  <div
-                    role="img"
-                    aria-label="QR platba"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                    dangerouslySetInnerHTML={{ __html: qr.markup }}
-                  />
-                </div>
-              )}
-            {qr.kind === 'png'
-              ? (
-                <>
-                  <button onClick={saveQr} disabled={saving || !card}>
-                    {saving ? 'Ukládám…' : 'Uložit QR'}
-                  </button>
-                  <p style={{ fontSize: '0.85rem', color: '#555' }}>
-                    Podrž QR pro uložení do Fotek, nebo klikni na „Uložit QR" pro QR s logem. Pak QR načti v bance z galerie.
-                  </p>
-                </>
-              )
-              : (
-                <p style={{ fontSize: '0.85rem', color: '#555' }}>
-                  Naskenuj QR ve své bankovní aplikaci.
-                </p>
-              )}
-            {qrError && <p style={{ color: 'red' }}>{qrError}</p>}
-          </>
-        )
-        : <p>Vyber položky nebo zadej dýško.</p>}
+              </div>
+            )}
 
-      {!signed
-        ? (
-          <section>
-            <p>Chceš se podepsat nebo nechat vzkaz, ať hostitel ví, kdo a co platil?</p>
-            <input placeholder="Jméno" value={name} onChange={(e) => setName(e.target.value)} />
-            <input placeholder="Vzkaz" value={message} onChange={(e) => setMessage(e.target.value)} />
-            <button onClick={sign} disabled={total <= 0}>Podepsat se</button>
-            {signError && <p style={{ color: 'red' }}>{signError}</p>}
-          </section>
-        )
-        : <p>Díky, podpis odeslán!</p>}
+            <div className={s.qrBadge}>▢ QR Platba</div>
+
+            {qr?.kind === 'png' ? (
+              <>
+                <button
+                  className={`${ui.btn} ${ui.btnPrimary} ${s.saveBtn}`}
+                  onClick={saveQr}
+                  disabled={saving || !card}
+                >
+                  {saving ? 'Ukládám…' : 'Uložit QR do mobilu'}
+                </button>
+                <p className={s.qrHint}>Podrž QR a ulož do Fotek, nebo klikni „Uložit QR". Pak ho načti v bankovní appce z galerie.</p>
+              </>
+            ) : (
+              <p className={s.qrHint}>Podrž QR a ulož do Fotek, pak ho načti v bankovní appce z galerie.</p>
+            )}
+            {qrError && <p className={s.signError}>{qrError}</p>}
+
+            {!signed ? (
+              <div className={s.sign}>
+                <p className={s.signPrompt}>Podepiš se, ať hostitel ví, kdo platil 🙂</p>
+                <input className={ui.field} placeholder="Jméno (třeba Pepa)" value={name} onChange={(e) => setName(e.target.value)} />
+                <input className={ui.field} placeholder="Vzkaz (nepovinné)" value={message} onChange={(e) => setMessage(e.target.value)} />
+                <button className={`${ui.btn} ${ui.btnPrimary}`} onClick={sign}>Podepsat se</button>
+                {signError && <p className={s.signError}>{signError}</p>}
+              </div>
+            ) : (
+              <p className={s.signDone}>Díky, podpis odeslán!</p>
+            )}
+          </div>
+        ) : (
+          <p className={s.emptyHint}>Vyber položky nebo zadej dýško. 👆</p>
+        )}
+      </div>
+
+      <div className={s.bar}>
+        <div className={s.barTotal}>
+          <span className={s.barLabel}>Tvůj účet</span>
+          <span className={s.barValue}>{formatAmount(total)} Kč</span>
+        </div>
+        <button className={s.barPay} onClick={scrollToPay} disabled={total <= 0}>
+          Zaplatit přes QR →
+        </button>
+      </div>
     </main>
   )
 }
