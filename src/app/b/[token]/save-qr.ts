@@ -19,6 +19,10 @@ export const qrFileName = (title: string): string => {
   return slug ? `platebnik-${slug}.png` : 'platebnik-qr.png'
 }
 
+// Card layout — single source of truth. The canvas draws the QR at QR_X/QR_Y/QR_SIZE
+// and the on-screen crop is derived from CARD_GEOMETRY below, so both stay in sync.
+// When adding design later (e.g. a logo), add a new constant (e.g. LOGO_H) and fold it
+// into QR_Y and CARD_H — never hardcode positions — and the page crop follows automatically.
 const FONT_STACK = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 const BRAND_URL = 'platebnik.cz'
 const PADDING = 48
