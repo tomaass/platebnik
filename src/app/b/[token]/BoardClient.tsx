@@ -29,9 +29,10 @@ export default function BoardClient(props: Props) {
   const [tipKc, setTipKc] = useState('')
   const [qr, setQr] = useState<LiveQr | null>(null)
   const [card, setCard] = useState<Blob | null>(null)
-  // Optimistic: assume canvas works (the common case, and keeps SSR/hydration consistent);
-  // a client-only probe corrects it for canvas-less WebViews.
-  const [canvasOk, setCanvasOk] = useState(true)
+  // Probe canvas once (lazy init runs in the browser on first render; false during SSR).
+  // The QR block is gated on `qr`, which is null until the client effects run, so this never
+  // affects SSR output — no hydration mismatch.
+  const [canvasOk] = useState(canUseCanvas)
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
   const [qrError, setQrError] = useState<string | undefined>(undefined)
@@ -59,10 +60,6 @@ export default function BoardClient(props: Props) {
     message: `${name} ${props.title}`.trim(),
   })
 
-  // Detect canvas support once on the client. When absent we go straight to SVG and hide the
-  // save affordances, instead of attempting (and failing) the PNG/card render every change.
-  useEffect(() => { setCanvasOk(canUseCanvas()) }, [])
-
   // Live QR for display — plain (no branding), generated immediately so it tracks the total
   // closely. Canvas PNG when available (long-pressable on iOS), else a canvas-free SVG so the QR
   // stays scannable. AbortController discards a stale result.
@@ -84,21 +81,21 @@ export default function BoardClient(props: Props) {
   }, [spayd, total, canvasOk])
 
   // Branded card for the "Uložit QR" button — pre-rendered (debounced) so share() can run within
-  // the click gesture on iOS. Skipped when canvas is unavailable (card needs it). Cleared on any
-  // change so a stale card (wrong amount) can never be saved; the button is disabled until ready.
-  // A card failure doesn't surface an error — the live QR reports QR problems; here it just keeps
-  // the button disabled.
+  // the click gesture on iOS. Only when a PNG live QR rendered (qr.kind === 'png'): that's the
+  // single signal that canvas works here, so the save UI and the card stay in lockstep and a
+  // failure here can't contradict an SVG-fallback QR. Cleared on any change so a stale card
+  // (wrong amount) can never be saved; the button is disabled until the fresh card is ready.
   useEffect(() => {
     setCard(null)
-    if (!canvasOk || total <= 0) return
+    if (qr?.kind !== 'png' || total <= 0) return
     const ac = new AbortController()
     const timer = setTimeout(() => {
       renderQrCard({ spayd, title: props.title, amountFormatted: formatAmount(total) })
         .then((blob) => { if (!ac.signal.aborted) setCard(blob) })
-        .catch(() => {})
+        .catch(() => { if (!ac.signal.aborted) setQrError('Uložení QR se nepodařilo připravit.') })
     }, CARD_DEBOUNCE_MS)
     return () => { ac.abort(); clearTimeout(timer) }
-  }, [spayd, total, props.title, canvasOk])
+  }, [spayd, total, props.title, qr?.kind])
 
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
@@ -172,14 +169,18 @@ export default function BoardClient(props: Props) {
                 />
               )
               : (
-                <div
-                  role="img"
-                  aria-label="QR platba"
-                  style={{ width: '100%', maxWidth: 280 }}
-                  dangerouslySetInnerHTML={{ __html: qr.markup }}
-                />
+                // Square box (padding-top:100%) so the inline SVG can't collapse in old WebViews.
+                <div style={{ position: 'relative', width: '100%', maxWidth: 280 }}>
+                  <div style={{ paddingTop: '100%' }} />
+                  <div
+                    role="img"
+                    aria-label="QR platba"
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                    dangerouslySetInnerHTML={{ __html: qr.markup }}
+                  />
+                </div>
               )}
-            {canvasOk
+            {qr.kind === 'png'
               ? (
                 <>
                   <button onClick={saveQr} disabled={saving || !card}>

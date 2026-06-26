@@ -40,7 +40,9 @@ export const renderQrDataUrl = (spayd: string): Promise<string> =>
 // SVG carries only a viewBox, so we inject responsive sizing or it can collapse to 0/300x150.
 export const renderQrSvg = async (spayd: string): Promise<string> => {
   const svg = await QRCode.toString(spayd, { type: 'svg', margin: 1, color: QR_COLOR })
-  return svg.replace('<svg ', '<svg style="width:100%;height:auto;display:block" ')
+  // Match "<svg" without a trailing char so it survives "<svg ", "<svg>" or "<svg\n".
+  // Fill the (square) wrapper rather than relying on the viewBox intrinsic ratio.
+  return svg.replace('<svg', '<svg style="width:100%;height:100%;display:block"')
 }
 
 // One-shot probe: is canvas usable here? Catches both missing getContext and privacy-hardened
