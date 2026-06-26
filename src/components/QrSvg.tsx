@@ -13,6 +13,9 @@ interface Props {
 // Shared accessible inline-SVG QR renderer. The SVG fills the caller-sized box.
 // `markup` MUST be qrcode output, not user input — it is injected via dangerouslySetInnerHTML.
 export default function QrSvg({ markup, label, className }: Props) {
+  // While the QR is still generating, markup is '' — render a sized placeholder rather than an
+  // empty role="img" that a screen reader would announce as a contentless image.
+  if (!markup) return <div className={className} />
   return (
     <div
       className={className}

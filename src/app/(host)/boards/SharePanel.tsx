@@ -11,7 +11,7 @@ export default function SharePanel({ token }: { token: string }) {
 
   useEffect(() => {
     if (!url) return
-    QRCode.toString(url, { type: 'svg', margin: 1 }).then(setSvg)
+    QRCode.toString(url, { type: 'svg', margin: 1, color: { dark: '#111111', light: '#ffffff' } }).then(setSvg)
   }, [url])
 
   return (
