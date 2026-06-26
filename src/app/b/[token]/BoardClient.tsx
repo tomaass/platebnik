@@ -6,6 +6,7 @@ import * as R from 'remeda'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
 import { signAction } from './sign-action'
+import { saveQrPng } from './save-qr'
 
 interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
@@ -23,6 +24,7 @@ export default function BoardClient(props: Props) {
   const [qr, setQr] = useState('')
   const [signed, setSigned] = useState(false)
   const [signError, setSignError] = useState<string | undefined>(undefined)
+  const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
 
@@ -57,6 +59,15 @@ export default function BoardClient(props: Props) {
 
   const setItemQty = (id: string, delta: number) =>
     setQty((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }))
+
+  const saveQr = async () => {
+    setSaving(true)
+    try {
+      await saveQrPng({ spayd, title: props.title, amountFormatted: formatAmount(total) })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const sign = async () => {
     setSignError(undefined)
@@ -102,7 +113,17 @@ export default function BoardClient(props: Props) {
 
       <p><strong>Celkem: {formatAmount(total)} Kč</strong></p>
       {qr
-        ? <div role="img" dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR Platba" />
+        ? (
+          <>
+            <div role="img" dangerouslySetInnerHTML={{ __html: qr }} aria-label="QR Platba" />
+            <button onClick={saveQr} disabled={saving}>
+              {saving ? 'Ukládám…' : 'Uložit QR'}
+            </button>
+            <p style={{ fontSize: '0.85rem', color: '#555' }}>
+              Ulož QR a načti ho v bankovní appce z galerie.
+            </p>
+          </>
+        )
         : <p>Vyber položky nebo zadej dýško.</p>}
 
       {!signed
