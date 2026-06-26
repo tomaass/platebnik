@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { asc, desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import * as R from 'remeda'
@@ -6,6 +7,20 @@ import { DEFAULT_THEME, isThemeKey, type ThemeKey } from '@/design/themes'
 import { generateVariableSymbol } from '@/lib/vs'
 import { db } from './client'
 import { boards, items } from './schema'
+
+// Lightweight title+theme lookup for metadata and OG images — avoids the full
+// items fetch those paths would otherwise discard. cache() dedupes the call
+// within a single request (e.g. generateMetadata running alongside the page).
+export const getBoardMeta = cache(
+  async (token: string): Promise<{ title: string; theme: ThemeKey } | null> => {
+    const board = await db.query.boards.findFirst({
+      where: eq(boards.token, token),
+      columns: { title: true, theme: true },
+    })
+    if (!board) return null
+    return { title: board.title, theme: isThemeKey(board.theme) ? board.theme : DEFAULT_THEME }
+  },
+)
 
 export interface BoardWithItems {
   token: string
