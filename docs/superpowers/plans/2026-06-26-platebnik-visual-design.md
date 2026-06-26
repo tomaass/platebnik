@@ -666,7 +666,7 @@ git commit -m "feat(boards): add per-board theme column, validation and default-
   color: var(--accent-ink);
 }
 
-.stepper .q {
+.q {
   min-width: 24px;
   text-align: center;
   font-family: var(--font-display);
@@ -1042,7 +1042,7 @@ export default function BoardClient(props: Props) {
           </span>
           <span className={ui.stepper}>
             <button className={`${ui.stepBtn} ${ui.stepMinus}`} aria-label={`Ubrat ${it.name}`} onClick={() => setItemQty(it.id, -1)}>−</button>
-            <span className="q">{qty[it.id] ?? 0}</span>
+            <span className={ui.q}>{qty[it.id] ?? 0}</span>
             <button className={`${ui.stepBtn} ${ui.stepPlus}`} aria-label={`Přidat ${it.name}`} onClick={() => setItemQty(it.id, +1)}>+</button>
           </span>
         </div>
