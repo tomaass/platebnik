@@ -28,6 +28,12 @@ therefore work in **its own worktree**, not the shared root checkout.
   `git checkout main`.
 - When you need to drop leftover edits to get a clean `main`, prefer
   `git stash push <file>` over discarding, so the work stays recoverable.
+- **Don't run `gh pr merge --delete-branch` from inside the worktree of the
+  branch being merged.** `gh` isn't worktree-aware: to delete the checked-out
+  local branch it first switches that checkout to `main`, parking `main` inside
+  the worktree and wedging future `git checkout main`. Instead merge from the
+  root checkout, or merge without `--delete-branch` and clean up afterwards
+  with `git worktree remove` (which never deletes branches or switches HEAD).
 
 ## Language conventions
 
