@@ -60,24 +60,30 @@ export default function BoardEditor({
       })
       return
     }
+    const fail = () => {
+      setSubmitting(false)
+      setServerError('Nepodařilo se uložit, zkus to znovu')
+    }
     setSubmitting(true)
     const clean = cleanItems(items)
-    if (token) {
-      const res = await updateBoardAction(token, { title, items: clean, theme })
-      setSubmitting(false)
-      if (res.error) return setServerError('Nepodařilo se uložit, zkus to znovu')
-      // No router.refresh(): reset the snapshot so the form is "clean" again.
-      setSnapshot({ title, items, theme })
-      setShowErrors(false)
-      setTouched(new Set())
-      return
+    try {
+      if (token) {
+        const res = await updateBoardAction(token, { title, items: clean, theme })
+        if (res.error) return fail()
+        // No router.refresh(): reset the snapshot so the form is "clean" again.
+        setSnapshot({ title, items, theme })
+        setShowErrors(false)
+        setTouched(new Set())
+        setSubmitting(false)
+        return
+      }
+      const res = await createBoardAction({ title, items: clean, theme })
+      if ('error' in res) return fail()
+      // Navigating away — leave submitting true to avoid a button flicker.
+      router.push(`/boards/${res.token}`)
+    } catch {
+      fail()
     }
-    const res = await createBoardAction({ title, items: clean, theme })
-    if ('error' in res) {
-      setSubmitting(false)
-      return setServerError('Nepodařilo se uložit, zkus to znovu')
-    }
-    router.push(`/boards/${res.token}`)
   }
 
   const titleErr = shows('title') ? errors.title : undefined
