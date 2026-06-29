@@ -1,11 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { nanoid } from 'nanoid'
 import type { ItemInput } from '@/domain/types'
 import { DEFAULT_THEME, THEMES, type ThemeKey } from '@/design/themes'
 import {
-  cleanItems, isBoardDirty, saveButton, validateBoardForm, type BoardFormState,
+  cleanItems, formatPrice, isBoardDirty, parsePrice, saveButton, validateBoardForm,
+  type BoardFormState,
 } from '@/domain/boardForm'
 import { createBoardAction, updateBoardAction } from '../actions'
 import ui from '@/design/ui.module.css'
@@ -18,14 +20,49 @@ interface Props {
   initialTheme?: ThemeKey
 }
 
+// The editor keeps each row's price as the raw string the user typed (so
+// in-progress decimals and a Czech comma separator survive) and a stable id
+// (so inline errors stay bound to the row, not its index).
+interface EditorItem {
+  id: string
+  name: string
+  price: string
+}
+
+function Field({
+  value, placeholder, error, inputMode, onChange, onBlur,
+}: {
+  value: string
+  placeholder: string
+  error?: string
+  inputMode?: 'decimal'
+  onChange: (value: string) => void
+  onBlur: () => void
+}) {
+  return (
+    <>
+      <input
+        className={`${ui.field} ${error ? s.inputError : ''}`}
+        value={value} placeholder={placeholder} inputMode={inputMode}
+        aria-invalid={!!error}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+      />
+      {error && <p className={s.fieldError}>{error}</p>}
+    </>
+  )
+}
+
 export default function BoardEditor({
   token, initialTitle = '', initialItems = [], initialTheme = DEFAULT_THEME,
 }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState(initialTitle)
-  const [items, setItems] = useState<ItemInput[]>(initialItems)
+  const [items, setItems] = useState<EditorItem[]>(
+    () => initialItems.map((it) => ({ id: nanoid(), name: it.name, price: formatPrice(it.priceHaler) })),
+  )
   const [theme, setTheme] = useState<ThemeKey>(initialTheme)
-  const [snapshot, setSnapshot] = useState<BoardFormState>({
+  const [savedSnapshot, setSavedSnapshot] = useState<BoardFormState>({
     title: initialTitle, items: initialItems, theme: initialTheme,
   })
   const [submitting, setSubmitting] = useState(false)
@@ -34,9 +71,26 @@ export default function BoardEditor({
   const [serverError, setServerError] = useState('')
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  const current: BoardFormState = { title, items, theme }
-  const { errors, valid } = validateBoardForm(current)
-  const dirty = isBoardDirty(current, snapshot)
+  // Numeric view of the rows, recomputed only when rows change.
+  const parsedItems = useMemo<ItemInput[]>(
+    () => items.map((it) => ({ name: it.name, priceHaler: parsePrice(it.price) ?? 0 })),
+    [items],
+  )
+  const current = useMemo<BoardFormState>(
+    () => ({ title, items: parsedItems, theme }),
+    [title, parsedItems, theme],
+  )
+  const base = useMemo(() => validateBoardForm(current), [current])
+  // Merge price-text format errors (unparseable, non-empty) that the numeric validator can't see.
+  const itemErrors = useMemo(
+    () => items.map((it, i) => {
+      const badFormat = it.price.trim() !== '' && parsePrice(it.price) === null
+      return badFormat ? { ...base.errors.items[i], price: 'Neplatná cena' } : base.errors.items[i]
+    }),
+    [items, base],
+  )
+  const valid = base.valid && items.every((it) => it.price.trim() === '' || parsePrice(it.price) !== null)
+  const dirty = useMemo(() => isBoardDirty(current, savedSnapshot), [current, savedSnapshot])
   const mode = token ? 'edit' : 'create'
   const btn = saveButton({ mode, dirty, valid, submitting })
 
@@ -44,10 +98,10 @@ export default function BoardEditor({
   const touch = (key: string) => setTouched((prev) => new Set(prev).add(key))
   const shows = (key: string) => showErrors || touched.has(key)
 
-  const setItem = (i: number, patch: Partial<ItemInput>) =>
-    setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)))
-  const addItem = () => setItems((prev) => [...prev, { name: '', priceHaler: 0 }])
-  const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i))
+  const setItem = (id: string, patch: Partial<Omit<EditorItem, 'id'>>) =>
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)))
+  const addItem = () => setItems((prev) => [...prev, { id: nanoid(), name: '', price: '' }])
+  const removeItem = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id))
 
   const save = async () => {
     setServerError('')
@@ -60,25 +114,25 @@ export default function BoardEditor({
       })
       return
     }
-    const fail = () => {
+    const fail = (message?: string) => {
       setSubmitting(false)
-      setServerError('Nepodařilo se uložit, zkus to znovu')
+      setServerError(message || 'Nepodařilo se uložit, zkus to znovu')
     }
     setSubmitting(true)
-    const clean = cleanItems(items)
+    const clean = cleanItems(parsedItems)
     try {
       if (token) {
         const res = await updateBoardAction(token, { title, items: clean, theme })
-        if (res.error) return fail()
+        if (res.error) return fail(res.error)
         // No router.refresh(): reset the snapshot so the form is "clean" again.
-        setSnapshot({ title, items, theme })
+        setSavedSnapshot({ title, items: parsedItems, theme })
         setShowErrors(false)
         setTouched(new Set())
         setSubmitting(false)
         return
       }
       const res = await createBoardAction({ title, items: clean, theme })
-      if ('error' in res) return fail()
+      if ('error' in res) return fail(res.error)
       // Navigating away — leave submitting true to avoid a button flicker.
       router.push(`/boards/${res.token}`)
     } catch {
@@ -86,50 +140,40 @@ export default function BoardEditor({
     }
   }
 
-  const titleErr = shows('title') ? errors.title : undefined
+  const titleErr = shows('title') ? base.errors.title : undefined
 
   return (
     <div ref={wrapRef} data-theme={theme} className={s.wrap}>
       <span className={ui.label}>Název akce</span>
-      <input
-        className={`${ui.field} ${titleErr ? s.inputError : ''}`}
-        value={title} placeholder="Grilovačka u Tomáše"
-        aria-invalid={!!titleErr}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={() => touch('title')}
+      <Field
+        value={title} placeholder="Grilovačka u Tomáše" error={titleErr}
+        onChange={setTitle} onBlur={() => touch('title')}
       />
-      {titleErr && <p className={s.fieldError}>{titleErr}</p>}
 
       <span className={ui.label}>Ceník</span>
-      {items.map((it, i) => {
-        const nameErr = shows(`item:${i}:name`) ? errors.items[i]?.name : undefined
-        const priceErr = shows(`item:${i}:price`) ? errors.items[i]?.price : undefined
-        return (
-          <div key={i} className={s.itemRow}>
-            <div className={s.itemName}>
-              <input
-                className={`${ui.field} ${nameErr ? s.inputError : ''}`} value={it.name} placeholder="Pivo 🍺"
-                aria-invalid={!!nameErr}
-                onChange={(e) => setItem(i, { name: e.target.value })}
-                onBlur={() => touch(`item:${i}:name`)}
-              />
-              {nameErr && <p className={s.fieldError}>{nameErr}</p>}
-            </div>
-            <div className={s.itemPrice}>
-              <input
-                className={`${ui.field} ${priceErr ? s.inputError : ''}`} type="number" inputMode="decimal" placeholder="Kč"
-                value={it.priceHaler === 0 ? '' : it.priceHaler / 100}
-                aria-invalid={!!priceErr}
-                onChange={(e) => setItem(i, { priceHaler: Math.round(Number(e.target.value) * 100) })}
-                onBlur={() => touch(`item:${i}:price`)}
-              />
-              {priceErr && <p className={s.fieldError}>{priceErr}</p>}
-            </div>
-            <button type="button" className={s.del} aria-label="Smazat položku" onClick={() => removeItem(i)}>×</button>
+      {items.map((it, i) => (
+        <div key={it.id} className={s.itemRow}>
+          <div className={s.itemName}>
+            <Field
+              value={it.name} placeholder="Pivo 🍺"
+              error={shows(`item:${it.id}:name`) ? itemErrors[i]?.name : undefined}
+              onChange={(v) => setItem(it.id, { name: v })}
+              onBlur={() => touch(`item:${it.id}:name`)}
+            />
           </div>
-        )
-      })}
+          <div className={s.itemPrice}>
+            <Field
+              value={it.price} placeholder="Kč" inputMode="decimal"
+              error={shows(`item:${it.id}:price`) ? itemErrors[i]?.price : undefined}
+              onChange={(v) => setItem(it.id, { price: v })}
+              onBlur={() => touch(`item:${it.id}:price`)}
+            />
+          </div>
+          <button type="button" className={s.del} aria-label="Smazat položku" onClick={() => removeItem(it.id)}>×</button>
+        </div>
+      ))}
       <button type="button" className={s.add} onClick={addItem}>+ Přidat položku</button>
+      {showErrors && base.errors.form && <p className={s.fieldError}>{base.errors.form}</p>}
       <p className={s.hint}>Bez položek? V pohodě — board pojede v režimu čistého dýška.</p>
 
       <span className={ui.label}>Styl akce</span>

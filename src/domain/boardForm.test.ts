@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { cleanItems, validateBoardForm, isBoardDirty, saveButton } from './boardForm'
+import {
+  cleanItems, validateBoardForm, isBoardDirty, saveButton, parsePrice, formatPrice,
+} from './boardForm'
 import { DEFAULT_THEME, THEME_KEYS } from '@/design/themes'
 
 const base = { title: 'Grilovačka', items: [], theme: DEFAULT_THEME }
@@ -58,6 +60,18 @@ describe('validateBoardForm', () => {
     expect(errors.items[0]).toEqual({ price: 'Cena nemůže být záporná' })
     expect(valid).toBe(false)
   })
+  test('víc než MAX_ITEMS položek je chyba (zrcadlí server)', () => {
+    const many = Array.from({ length: 101 }, (_, i) => ({ name: `Pivo ${i}`, priceHaler: 100 }))
+    const { errors, valid } = validateBoardForm({ ...base, items: many })
+    expect(errors.form).toBe('Maximálně 100 položek')
+    expect(valid).toBe(false)
+  })
+  test('přesně MAX_ITEMS položek je v pořádku', () => {
+    const many = Array.from({ length: 100 }, (_, i) => ({ name: `Pivo ${i}`, priceHaler: 100 }))
+    const { errors, valid } = validateBoardForm({ ...base, items: many })
+    expect(errors.form).toBeUndefined()
+    expect(valid).toBe(true)
+  })
 })
 
 describe('isBoardDirty', () => {
@@ -85,32 +99,49 @@ describe('isBoardDirty', () => {
 describe('saveButton', () => {
   test('create validní', () => {
     expect(saveButton({ mode: 'create', dirty: true, valid: true, submitting: false })).toEqual({
-      label: 'Vytvořit board', disabled: false, loading: false, muted: false,
+      label: 'Vytvořit board', disabled: false, muted: false,
     })
   })
   test('create nevalidní je muted ale klikatelné', () => {
     expect(saveButton({ mode: 'create', dirty: true, valid: false, submitting: false })).toEqual({
-      label: 'Vytvořit board', disabled: false, loading: false, muted: true,
+      label: 'Vytvořit board', disabled: false, muted: true,
     })
   })
   test('create při odesílání', () => {
     expect(saveButton({ mode: 'create', dirty: true, valid: true, submitting: true })).toEqual({
-      label: 'Vytvářím…', disabled: true, loading: true, muted: false,
+      label: 'Vytvářím…', disabled: true, muted: false,
     })
   })
   test('edit beze změn je disabled Uloženo', () => {
     expect(saveButton({ mode: 'edit', dirty: false, valid: true, submitting: false })).toEqual({
-      label: 'Uloženo ✓', disabled: true, loading: false, muted: false,
+      label: 'Uloženo ✓', disabled: true, muted: false,
     })
   })
   test('edit se změnami', () => {
     expect(saveButton({ mode: 'edit', dirty: true, valid: true, submitting: false })).toEqual({
-      label: 'Uložit změny', disabled: false, loading: false, muted: false,
+      label: 'Uložit změny', disabled: false, muted: false,
     })
   })
   test('edit při ukládání', () => {
     expect(saveButton({ mode: 'edit', dirty: true, valid: true, submitting: true })).toEqual({
-      label: 'Ukládám…', disabled: true, loading: true, muted: false,
+      label: 'Ukládám…', disabled: true, muted: false,
     })
   })
+})
+
+describe('parsePrice', () => {
+  test('prázdný řetězec je 0', () => { expect(parsePrice('')).toBe(0) })
+  test('celé číslo', () => { expect(parsePrice('120')).toBe(120_00) })
+  test('desetinné s tečkou', () => { expect(parsePrice('12.5')).toBe(12_50) })
+  test('desetinné s českou čárkou', () => { expect(parsePrice('12,50')).toBe(12_50) })
+  test('ignoruje mezery', () => { expect(parsePrice(' 1 2 , 5 0 ')).toBe(12_50) })
+  test('záporná cena se zachová (validace ji chytí)', () => { expect(parsePrice('-5')).toBe(-5_00) })
+  test('nečíselný text je null', () => { expect(parsePrice('abc')).toBeNull() })
+  test('dvě čárky jsou null', () => { expect(parsePrice('1,2,3')).toBeNull() })
+})
+
+describe('formatPrice', () => {
+  test('0 je prázdný řetězec', () => { expect(formatPrice(0)).toBe('') })
+  test('celé koruny bez desetin', () => { expect(formatPrice(12_00)).toBe('12') })
+  test('desetiny s českou čárkou', () => { expect(formatPrice(12_50)).toBe('12,5') })
 })

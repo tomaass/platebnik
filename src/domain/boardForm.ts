@@ -1,7 +1,9 @@
 import * as R from 'remeda'
 import type { ItemInput } from './types'
 import type { ThemeKey } from '@/design/themes'
-import { MAX_ITEM_NAME, MAX_PRICE_HALER, MAX_TITLE } from './validation'
+import {
+  MAX_ITEM_NAME, MAX_ITEMS, MAX_PRICE_HALER, MAX_TITLE,
+} from './validation'
 
 export interface BoardFormState {
   title: string
@@ -16,6 +18,8 @@ export interface ItemFieldError {
 
 export interface BoardFormErrors {
   title?: string
+  // Board-level error not tied to a single field (e.g. too many items).
+  form?: string
   items: (ItemFieldError | undefined)[]
 }
 
@@ -57,8 +61,12 @@ export const validateBoardForm = (state: BoardFormState): BoardValidation => {
         ? `Název je moc dlouhý (max ${MAX_TITLE} znaků)`
         : undefined
   const items = R.map(state.items, validateItem)
-  const valid = !title && items.every((e) => e === undefined)
-  return { errors: { title, items }, valid }
+  // Mirror the server boardSchema's .max(MAX_ITEMS); only persisted rows count.
+  const form = cleanItems(state.items).length > MAX_ITEMS
+    ? `Maximálně ${MAX_ITEMS} položek`
+    : undefined
+  const valid = !title && !form && items.every((e) => e === undefined)
+  return { errors: { title, form, items }, valid }
 }
 
 const itemsEqual = (a: ItemInput[], b: ItemInput[]): boolean => {
@@ -75,12 +83,32 @@ export const isBoardDirty = (current: BoardFormState, snapshot: BoardFormState):
   current.theme !== snapshot.theme ||
   !itemsEqual(cleanItems(current.items), cleanItems(snapshot.items))
 
+// --- Price text <-> haléře -------------------------------------------------
+// The editor works with the raw string the user typed so in-progress decimals
+// aren't clobbered, and so a Czech comma separator is accepted on mobile.
+
+/**
+ * Parse a price the user typed into integer haléře.
+ * Empty string → 0. Unparseable non-empty text → null (a format error).
+ * Accepts both "," and "." as the decimal separator and ignores whitespace.
+ */
+export const parsePrice = (text: string): number | null => {
+  const normalized = text.replace(/\s/g, '').replace(/,/g, '.')
+  if (normalized === '') return 0
+  const value = Number(normalized)
+  if (!Number.isFinite(value)) return null
+  return Math.round(value * 100)
+}
+
+/** Render haléře for a price input. 0 → "" (placeholder shows instead). */
+export const formatPrice = (priceHaler: number): string =>
+  priceHaler === 0 ? '' : String(priceHaler / 100).replace('.', ',')
+
 export type SaveMode = 'create' | 'edit'
 
 export interface SaveButton {
   label: string
   disabled: boolean
-  loading: boolean
   muted: boolean
 }
 
@@ -94,15 +122,14 @@ export const saveButton = (input: {
     return {
       label: input.mode === 'create' ? 'Vytvářím…' : 'Ukládám…',
       disabled: true,
-      loading: true,
       muted: false,
     }
   }
   if (input.mode === 'create') {
-    return { label: 'Vytvořit board', disabled: false, loading: false, muted: !input.valid }
+    return { label: 'Vytvořit board', disabled: false, muted: !input.valid }
   }
   if (!input.dirty) {
-    return { label: 'Uloženo ✓', disabled: true, loading: false, muted: false }
+    return { label: 'Uloženo ✓', disabled: true, muted: false }
   }
-  return { label: 'Uložit změny', disabled: false, loading: false, muted: !input.valid }
+  return { label: 'Uložit změny', disabled: false, muted: !input.valid }
 }
