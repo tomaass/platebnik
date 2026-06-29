@@ -1,9 +1,9 @@
 import { ImageResponse } from 'next/og'
 import { DEFAULT_THEME } from '@/design/themes'
 import { OG_CONTENT_TYPE, OG_SIZE, ogCard } from '@/lib/og'
-import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
+import { SITE_TAGLINE, SITE_TITLE } from '@/lib/site'
 
-export const alt = `${SITE_NAME} — ${SITE_TAGLINE}`
+export const alt = SITE_TITLE
 export const size = OG_SIZE
 export const contentType = OG_CONTENT_TYPE
 
