@@ -6,7 +6,9 @@
 .itemRow {
   display: flex;
   gap: 8px;
-  align-items: center;
+  /* Top-align so a field error growing below the name input doesn't re-center
+     and shift the inputs. Inputs and the delete button are all --tap tall. */
+  align-items: flex-start;
   margin-bottom: 8px;
 }
 
@@ -90,4 +92,19 @@
 .save {
   width: 100%;
   margin-top: 16px;
+}
+
+.fieldError {
+  color: #c0392b;
+  font-size: 12px;
+  margin: 4px 2px 0;
+}
+
+.inputError {
+  border-color: #c0392b;
+}
+
+/* Invalid save button: visually muted but still clickable (guides to errors). */
+.saveMuted {
+  opacity: 0.5;
 }
