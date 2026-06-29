@@ -53,6 +53,11 @@ describe('validateBoardForm', () => {
     const { errors } = validateBoardForm({ ...base, items: [{ name: 'Pivo', priceHaler: 100_000_01 }] })
     expect(errors.items[0]).toEqual({ price: 'Cena je moc vysoká' })
   })
+  test('záporná cena je chyba', () => {
+    const { errors, valid } = validateBoardForm({ ...base, items: [{ name: 'Pivo', priceHaler: -500 }] })
+    expect(errors.items[0]).toEqual({ price: 'Cena nemůže být záporná' })
+    expect(valid).toBe(false)
+  })
 })
 
 describe('isBoardDirty', () => {
