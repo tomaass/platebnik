@@ -60,3 +60,49 @@ export const validateBoardForm = (state: BoardFormState): BoardValidation => {
   const valid = !title && items.every((e) => e === undefined)
   return { errors: { title, items }, valid }
 }
+
+const itemsEqual = (a: ItemInput[], b: ItemInput[]): boolean => {
+  if (a.length !== b.length) return false
+  return a.every((it, i) => {
+    const other = b[i]
+    return other !== undefined && it.name === other.name && it.priceHaler === other.priceHaler
+  })
+}
+
+/** Dirty = persisted content differs; empty rows are ignored. */
+export const isBoardDirty = (current: BoardFormState, snapshot: BoardFormState): boolean =>
+  current.title !== snapshot.title ||
+  current.theme !== snapshot.theme ||
+  !itemsEqual(cleanItems(current.items), cleanItems(snapshot.items))
+
+export type SaveMode = 'create' | 'edit'
+
+export interface SaveButton {
+  label: string
+  disabled: boolean
+  loading: boolean
+  muted: boolean
+}
+
+export const saveButton = (input: {
+  mode: SaveMode
+  dirty: boolean
+  valid: boolean
+  submitting: boolean
+}): SaveButton => {
+  if (input.submitting) {
+    return {
+      label: input.mode === 'create' ? 'Vytvářím…' : 'Ukládám…',
+      disabled: true,
+      loading: true,
+      muted: false,
+    }
+  }
+  if (input.mode === 'create') {
+    return { label: 'Vytvořit board', disabled: false, loading: false, muted: !input.valid }
+  }
+  if (!input.dirty) {
+    return { label: 'Uloženo ✓', disabled: true, loading: false, muted: false }
+  }
+  return { label: 'Uložit změny', disabled: false, loading: false, muted: !input.valid }
+}

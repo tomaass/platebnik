@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { cleanItems, validateBoardForm } from './boardForm'
-import { DEFAULT_THEME } from '@/design/themes'
+import { cleanItems, validateBoardForm, isBoardDirty, saveButton } from './boardForm'
+import { DEFAULT_THEME, THEME_KEYS } from '@/design/themes'
 
 const base = { title: 'Grilovačka', items: [], theme: DEFAULT_THEME }
 
@@ -52,5 +52,60 @@ describe('validateBoardForm', () => {
   test('příliš vysoká cena', () => {
     const { errors } = validateBoardForm({ ...base, items: [{ name: 'Pivo', priceHaler: 100_000_01 }] })
     expect(errors.items[0]).toEqual({ price: 'Cena je moc vysoká' })
+  })
+})
+
+describe('isBoardDirty', () => {
+  const snap = { title: 'A', items: [{ name: 'Pivo', priceHaler: 5000 }], theme: DEFAULT_THEME }
+  test('beze změn není dirty', () => {
+    expect(isBoardDirty(snap, snap)).toBe(false)
+  })
+  test('změna názvu je dirty', () => {
+    expect(isBoardDirty({ ...snap, title: 'B' }, snap)).toBe(true)
+  })
+  test('přidaný prázdný řádek se nepočítá jako změna', () => {
+    expect(
+      isBoardDirty({ ...snap, items: [...snap.items, { name: '', priceHaler: 0 }] }, snap),
+    ).toBe(false)
+  })
+  test('změna ceny položky je dirty', () => {
+    expect(isBoardDirty({ ...snap, items: [{ name: 'Pivo', priceHaler: 6000 }] }, snap)).toBe(true)
+  })
+  test('změna tématu je dirty', () => {
+    const other = THEME_KEYS.find((k) => k !== DEFAULT_THEME)!
+    expect(isBoardDirty({ ...snap, theme: other }, snap)).toBe(true)
+  })
+})
+
+describe('saveButton', () => {
+  test('create validní', () => {
+    expect(saveButton({ mode: 'create', dirty: true, valid: true, submitting: false })).toEqual({
+      label: 'Vytvořit board', disabled: false, loading: false, muted: false,
+    })
+  })
+  test('create nevalidní je muted ale klikatelné', () => {
+    expect(saveButton({ mode: 'create', dirty: true, valid: false, submitting: false })).toEqual({
+      label: 'Vytvořit board', disabled: false, loading: false, muted: true,
+    })
+  })
+  test('create při odesílání', () => {
+    expect(saveButton({ mode: 'create', dirty: true, valid: true, submitting: true })).toEqual({
+      label: 'Vytvářím…', disabled: true, loading: true, muted: false,
+    })
+  })
+  test('edit beze změn je disabled Uloženo', () => {
+    expect(saveButton({ mode: 'edit', dirty: false, valid: true, submitting: false })).toEqual({
+      label: 'Uloženo ✓', disabled: true, loading: false, muted: false,
+    })
+  })
+  test('edit se změnami', () => {
+    expect(saveButton({ mode: 'edit', dirty: true, valid: true, submitting: false })).toEqual({
+      label: 'Uložit změny', disabled: false, loading: false, muted: false,
+    })
+  })
+  test('edit při ukládání', () => {
+    expect(saveButton({ mode: 'edit', dirty: true, valid: true, submitting: true })).toEqual({
+      label: 'Ukládám…', disabled: true, loading: true, muted: false,
+    })
   })
 })
