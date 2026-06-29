@@ -18,6 +18,10 @@ export const SITE_NAME = 'Platebník'
 
 export const SITE_TAGLINE = 'Naťukej, co sis dal. Zbytek zařídí QR.'
 
+// Full "name — tagline" title, shared by the PWA manifest name and the OG
+// image alt text so the two can't drift apart.
+export const SITE_TITLE = `${SITE_NAME} — ${SITE_TAGLINE}`
+
 export const SITE_DESCRIPTION =
   'Udělej ceník na grilovačku nebo sešlost, nasdílej QR a nech partu naťukat, ' +
   'co si dali. Každý zaplatí přímo tobě přes QR Platbu — bez kalkulačky a bez poplatků.'

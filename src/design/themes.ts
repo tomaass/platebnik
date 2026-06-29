@@ -21,5 +21,12 @@ export const THEME_GRADIENTS: Record<ThemeKey, readonly [string, string]> = {
   green: ['#34c759', '#0e9e6e'],
 }
 
+// Page background per theme — mirrors --bg in globals.css. Used where CSS
+// variables can't reach (PWA manifest background_color).
+export const THEME_BACKGROUNDS: Record<ThemeKey, string> = {
+  sunset: '#fff9f7',
+  green: '#f6fbf3',
+}
+
 export const isThemeKey = (v: unknown): v is ThemeKey =>
   typeof v === 'string' && (THEME_KEYS as readonly string[]).includes(v)
