@@ -6,7 +6,9 @@
 .itemRow {
   display: flex;
   gap: 8px;
-  align-items: center;
+  /* Top-align so a field error growing below the name input doesn't re-center
+     and shift the inputs. Inputs and the delete button are all --tap tall. */
+  align-items: flex-start;
   margin-bottom: 8px;
 }
 
