@@ -63,6 +63,22 @@ The bypass is **triple-locked** — defense in depth, each lock independently su
 
 ---
 
+## Auth behavior across preview branches
+
+Each preview **branch** deploys to a **different host** (`platebnik-git-<branch>-tomaass-projects.vercel.app`, plus a rotating per-deploy hash URL). What is shared vs. per-host matters:
+
+- **Shared across all previews:** the **dev Neon DB** (so `users`, `accounts`, `sessions`, `verificationTokens` are common) and — if you use the same `AUTH_SECRET` on Preview — the session-signing secret. You never re-register per branch; the account already exists.
+- **Per host (NOT shared):** the **session cookie** and the **bypass cookie**. Cookies are scoped to the exact subdomain, so a cookie set on branch A's host is not sent to branch B's host. **Net effect: you establish a cookie once per branch** (one magic-link-via-logs login, or one `/preview-login?key=…` click), not once ever.
+- **`AUTH_TRUST_HOST=true` is required** because the preview host is dynamic: NextAuth trusts the incoming host header so the magic-link callback URL points at the preview you're actually on. Without it the callback host would be wrong and login would fail.
+- **Prefer the stable branch alias over the per-deploy hash URL.** The hash changes on every push → new subdomain → cookie invalidated → re-login each deploy. The branch alias is stable across pushes, so the cookie and DB session (~30 days) survive redeploys. It's also the sane host to register anywhere a fixed callback URL is needed.
+- **Bypass and real login coexist.** `requireUser()` checks the bypass first; with no/invalid bypass cookie it falls through to the normal NextAuth flow. So on any preview you can use either path.
+- **Google OAuth is effectively off on preview** (Part 1 leaves `AUTH_GOOGLE_*` unset) because each preview host would need its callback URL registered in Google Cloud. On preview, auth = email magic-link (via logs) and/or the bypass.
+- **Production is unaffected:** `VERCEL_ENV='production'` and the absence of `PREVIEW_BYPASS_SECRET` in prod env both disable the bypass; prod keeps full Google + email login.
+
+**One-liner:** you log in **once per preview branch** (magic-link-via-logs or one bypass click); the dev DB, users, and secret are shared, so it's always "establish a cookie," never "create an account."
+
+---
+
 ## Part 2 — Gated auth bypass (optional convenience)
 
 ### File Structure
