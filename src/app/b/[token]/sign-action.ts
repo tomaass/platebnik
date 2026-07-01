@@ -6,6 +6,7 @@ import { db } from '@/db/client'
 import { boards } from '@/db/schema'
 import { createContribution, countContributionsByBoard } from '@/db/contributions'
 import { contributionSchema } from '@/domain/validation'
+import { track } from '@/lib/analytics'
 import { checkRateLimit } from '@/lib/rateLimit'
 
 const MAX_CONTRIBUTIONS_PER_BOARD = 1000
@@ -47,6 +48,15 @@ export const signAction = async (input: {
     selectionSnapshot: parsed.data.selectionSnapshot,
     amountHaler: parsed.data.amountHaler,
     tipHaler: parsed.data.tipHaler,
+  })
+  // Anonymous payer — no identity, so the board token is the distinct id.
+  // Board-level funnels aggregate on the board_token property.
+  await track('board_signed', input.token, {
+    board_token: input.token,
+    amount_haler: parsed.data.amountHaler,
+    tip_haler: parsed.data.tipHaler,
+    has_message: Boolean(parsed.data.message),
+    has_name: Boolean(parsed.data.name),
   })
   return { ok: true }
 }

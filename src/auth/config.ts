@@ -5,6 +5,7 @@ import Nodemailer from 'next-auth/providers/nodemailer'
 import { redirect } from 'next/navigation'
 import { db } from '@/db/client'
 import { accounts, sessions, users, verificationTokens } from '@/db/schema'
+import { track } from '@/lib/analytics'
 
 const devSendVerificationRequest = async ({
   identifier,
@@ -43,6 +44,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, user }) {
       if (session.user) session.user.id = user.id
       return session
+    },
+  },
+  events: {
+    // Fires only when the adapter creates a new account (first sign-in) — our
+    // "registration" event.
+    async createUser({ user }) {
+      if (user.id) {
+        await track('user_registered', user.id, {
+          email_domain: user.email?.split('@')[1] ?? null,
+        })
+      }
     },
   },
 })
