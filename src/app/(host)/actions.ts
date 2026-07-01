@@ -10,6 +10,7 @@ import {
 } from '@/db/boards'
 import { setPaid } from '@/db/contributions'
 import { czAccountToIban } from '@/domain/iban'
+import { track } from '@/lib/analytics'
 import { accountSchema, boardSchema } from '@/domain/validation'
 import type { ItemInput } from '@/domain/types'
 import type { ThemeKey } from '@/design/themes'
@@ -37,6 +38,11 @@ export const createBoardAction = async (
   const parsed = boardSchema.safeParse(input)
   if (!parsed.success) return { error: 'Neplatná data boardu' }
   const token = await createBoard({ userId: user.id, ...parsed.data })
+  await track('board_created', user.id, {
+    board_token: token,
+    item_count: parsed.data.items.length,
+    theme: parsed.data.theme,
+  })
   revalidatePath('/boards')
   return { token }
 }
@@ -62,4 +68,7 @@ export const deleteBoardAction = async (token: string): Promise<void> => {
 export const setPaidAction = async (id: string, paid: boolean): Promise<void> => {
   const user = await requireUser()
   await setPaid(id, user.id, paid)
+  if (paid) {
+    await track('board_paid', user.id, { contribution_id: id })
+  }
 }
