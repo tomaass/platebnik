@@ -49,9 +49,12 @@ export const signAction = async (input: {
     amountHaler: parsed.data.amountHaler,
     tipHaler: parsed.data.tipHaler,
   })
-  // Anonymous payer — no identity, so the board token is the distinct id.
-  // Board-level funnels aggregate on the board_token property.
-  await track('board_signed', input.token, {
+  // The payer is anonymous, but we attribute the signature to the board's
+  // host (board.userId) so it lands on the same person as board_created /
+  // board_paid — otherwise the conversion funnel breaks across the
+  // host↔payer boundary. board_token stays as a property for board-level
+  // breakdowns.
+  await track('board_signed', board.userId, {
     board_token: input.token,
     amount_haler: parsed.data.amountHaler,
     tip_haler: parsed.data.tipHaler,
