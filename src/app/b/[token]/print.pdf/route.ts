@@ -17,7 +17,8 @@ export async function GET(
 
   // Time the whole PDF production (QR encode + render, incl. Twemoji CDN
   // fetches) so `render_ms` gives an early signal if this route gets slow.
-  const startedAt = Date.now()
+  // performance.now() is monotonic — Date.now() could jump on an NTP step.
+  const startedAt = performance.now()
   const boardUrl = `${SITE_URL}/b/${token}`
   const qrDataUrl = await qrPngDataUrl(boardUrl, 1000, 4, 'H')
 
@@ -27,7 +28,7 @@ export async function GET(
     qrDataUrl,
     shortUrl: `${SITE_HOST}/b/${token}`,
   })
-  const renderMs = Date.now() - startedAt
+  const renderMs = Math.round(performance.now() - startedAt)
 
   // Attribute to the board's host (board.userId) so it lands on the same
   // PostHog person as board_created / board_paid — otherwise this event drops
