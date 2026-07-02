@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import * as R from 'remeda'
 import type { ItemInput } from '@/domain/types'
@@ -29,6 +29,7 @@ export interface BoardWithItems {
   variableSymbol: string
   tipPercents: number[]
   theme: ThemeKey
+  archivedAt: Date | null
   items: { id: string; name: string; priceHaler: number; position: number }[]
 }
 
@@ -36,6 +37,7 @@ export interface BoardSummary {
   token: string
   title: string
   createdAt: Date
+  archivedAt: Date | null
 }
 
 const itemRows = (boardId: string, list: ItemInput[]) =>
@@ -68,6 +70,7 @@ export const getBoardByToken = async (token: string): Promise<BoardWithItems | n
     token: board.token, userId: board.userId, title: board.title,
     variableSymbol: board.variableSymbol, tipPercents: board.tipPercents,
     theme: isThemeKey(board.theme) ? board.theme : DEFAULT_THEME,
+    archivedAt: board.archivedAt,
     items: R.map(rows, (r) => ({
       id: r.id, name: r.name, priceHaler: r.priceHaler, position: r.position,
     })),
@@ -76,8 +79,9 @@ export const getBoardByToken = async (token: string): Promise<BoardWithItems | n
 
 export const listBoardsByUser = async (userId: string): Promise<BoardSummary[]> => {
   const rows = await db.select({
-    token: boards.token, title: boards.title, createdAt: boards.createdAt,
-  }).from(boards).where(eq(boards.userId, userId))
+    token: boards.token, title: boards.title,
+    createdAt: boards.createdAt, archivedAt: boards.archivedAt,
+  }).from(boards).where(eq(boards.userId, userId)).orderBy(desc(boards.createdAt))
   return rows
 }
 
@@ -105,9 +109,19 @@ export const deleteBoard = async (token: string, userId: string): Promise<void> 
   await db.delete(boards).where(eq(boards.token, token))
 }
 
+export const archiveBoard = async (token: string, userId: string): Promise<void> => {
+  await assertOwner(token, userId)
+  await db.update(boards).set({ archivedAt: new Date() }).where(eq(boards.token, token))
+}
+
+export const unarchiveBoard = async (token: string, userId: string): Promise<void> => {
+  await assertOwner(token, userId)
+  await db.update(boards).set({ archivedAt: null }).where(eq(boards.token, token))
+}
+
 export const getLatestBoardTheme = async (userId: string): Promise<ThemeKey> => {
   const rows = await db.select({ theme: boards.theme }).from(boards)
-    .where(eq(boards.userId, userId))
+    .where(and(eq(boards.userId, userId), isNull(boards.archivedAt)))
     .orderBy(desc(boards.createdAt))
     .limit(1)
   const theme = rows[0]?.theme

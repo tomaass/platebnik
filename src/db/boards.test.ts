@@ -4,7 +4,8 @@ import { db } from './client'
 import { users } from './schema'
 import { eq } from 'drizzle-orm'
 import {
-  createBoard, deleteBoard, getBoardByToken, getLatestBoardTheme, listBoardsByUser, updateBoard,
+  archiveBoard, createBoard, deleteBoard, getBoardByToken,
+  getLatestBoardTheme, listBoardsByUser, unarchiveBoard, updateBoard,
 } from './boards'
 
 const userId = `test-${nanoid(8)}`
@@ -77,5 +78,47 @@ describe('boards repository', () => {
     const t = await createBoard({ userId, title: 'X', items: [] })
     expect((await getBoardByToken(t))?.theme).toBe('sunset')
     await deleteBoard(t, userId)
+  })
+
+  test('archiveBoard nastaví archivedAt, unarchiveBoard ho vynuluje', async () => {
+    const token = await createBoard({ userId, title: 'Gril', items: [] })
+    expect((await getBoardByToken(token))?.archivedAt).toBeNull()
+
+    await archiveBoard(token, userId)
+    expect((await getBoardByToken(token))?.archivedAt).toBeInstanceOf(Date)
+
+    await unarchiveBoard(token, userId)
+    expect((await getBoardByToken(token))?.archivedAt).toBeNull()
+
+    await deleteBoard(token, userId)
+  })
+
+  test('archiveBoard cizího uživatele vyhodí chybu', async () => {
+    const token = await createBoard({ userId, title: 'A', items: [] })
+    await expect(archiveBoard(token, 'someone-else')).rejects.toThrow()
+    await deleteBoard(token, userId)
+  })
+
+  test('listBoardsByUser nese archivedAt', async () => {
+    const active = await createBoard({ userId, title: 'Aktivní', items: [] })
+    const gone = await createBoard({ userId, title: 'Pryč', items: [] })
+    await archiveBoard(gone, userId)
+
+    const rows = await listBoardsByUser(userId)
+    expect(rows.find((b) => b.token === active)?.archivedAt).toBeNull()
+    expect(rows.find((b) => b.token === gone)?.archivedAt).toBeInstanceOf(Date)
+
+    await deleteBoard(active, userId)
+    await deleteBoard(gone, userId)
+  })
+
+  test('getLatestBoardTheme ignoruje archivované akce', async () => {
+    const u = `t-${nanoid(6)}`
+    await db.insert(users).values({ id: u, email: `${u}@test.local` })
+    const token = await createBoard({ userId: u, title: 'Stará', items: [], theme: 'green' })
+    await archiveBoard(token, u)
+    // The only board is archived → no active board → default theme.
+    expect(await getLatestBoardTheme(u)).toBe('sunset')
+    await db.delete(users).where(eq(users.id, u)) // cascade also deletes the board
   })
 })
