@@ -21,6 +21,9 @@ export default function SharePanel({ token }: { token: string }) {
         <QrSvg className={s.shareQr} markup={svg} label="QR kód na board" />
         <a className={s.shareUrl} href={url}>{url}</a>
       </div>
+      <a className={s.sharePrint} href={`/b/${token}/print.pdf`} target="_blank" rel="noopener noreferrer">
+        Vytisknout QR na stůl (PDF)
+      </a>
     </div>
   )
 }
