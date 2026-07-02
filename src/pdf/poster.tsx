@@ -84,7 +84,7 @@ function PosterDocument({ title, theme, qrDataUrl, shortUrl }: PosterProps) {
   const accent = THEME_GRADIENTS[theme][0]
   return (
     <Document>
-      <Page size="A4" wrap={false} style={styles.page}>
+      <Page size="A4" style={styles.page}>
         <View style={[styles.accentBar, { backgroundColor: accent }]} />
         <View style={styles.body}>
           <Text style={[styles.wordmark, { color: accent }]}>Platebník</Text>
