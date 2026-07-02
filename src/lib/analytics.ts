@@ -5,7 +5,12 @@ import { PostHog } from 'posthog-node'
 // identifiers, no consent banner needed). Complements Vercel Web Analytics,
 // which covers anonymous traffic/pageviews.
 
-type AnalyticsEvent = 'user_registered' | 'board_created' | 'board_signed' | 'board_paid'
+type AnalyticsEvent =
+  | 'user_registered'
+  | 'board_created'
+  | 'board_signed'
+  | 'board_paid'
+  | 'board_print_pdf'
 
 type Properties = Record<string, string | number | boolean | null | undefined>
 
