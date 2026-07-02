@@ -3,7 +3,9 @@ import { requireUser } from '@/auth/config'
 import { getBoardByToken } from '@/db/boards'
 import { listContributionsByBoard } from '@/db/contributions'
 import BoardWorkspace from '../BoardWorkspace'
+import BoardDangerZone from '../BoardDangerZone'
 import ContributionsList from '../ContributionsList'
+import s from '../../host.module.css'
 
 export default async function BoardDetail({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -14,6 +16,7 @@ export default async function BoardDetail({ params }: { params: Promise<{ token:
   return (
     <main>
       <h1>{board.title}</h1>
+      {board.archivedAt && <p className={s.archivedNote}>Tato akce je archivovaná.</p>}
       <BoardWorkspace
         // Remount per board so the live theme state can't carry over from a
         // previous board on a client-side board→board navigation.
@@ -25,6 +28,7 @@ export default async function BoardDetail({ params }: { params: Promise<{ token:
       />
       <h2>Kdo se podepsal</h2>
       <ContributionsList rows={contributions} />
+      <BoardDangerZone token={token} title={board.title} archived={!!board.archivedAt} />
     </main>
   )
 }

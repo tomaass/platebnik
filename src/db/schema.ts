@@ -25,6 +25,8 @@ export const boards = pgTable('boards', {
   theme: text('theme').notNull().default(DEFAULT_THEME),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  // NULL = active board; set = archived (ended, hidden from the active list).
+  archivedAt: timestamp('archived_at'),
 })
 
 export const items = pgTable('items', {
