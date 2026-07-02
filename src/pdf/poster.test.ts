@@ -17,4 +17,19 @@ NkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
     expect(buffer.subarray(0, 4).toString('latin1')).toBe('%PDF')
     expect(buffer.length).toBeGreaterThan(1000)
   })
+
+  test('clips a very long Czech title to a single page without throwing', async () => {
+    const buffer = await renderPosterPdf({
+      // 200 Czech chars would overflow to a second page without the truncation
+      // guard (maxLines/textOverflow + Page wrap={false}).
+      title: 'Řeřicha '.repeat(25),
+      theme: 'green',
+      shortUrl: 'platebnik.cz/b/XYZ789',
+      qrDataUrl:
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42m\
+NkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    })
+    expect(buffer.subarray(0, 4).toString('latin1')).toBe('%PDF')
+    expect(buffer.length).toBeGreaterThan(1000)
+  })
 })

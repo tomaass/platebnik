@@ -12,8 +12,9 @@ import {
 import { THEME_GRADIENTS, type ThemeKey } from '@/design/themes'
 
 // Register Czech-capable Inter (the built-in Helvetica cannot render č/ř/š/ž/…).
-// Read from the bundled TTFs; next.config.ts ensures they ship in the route's
-// serverless trace on Vercel.
+// Read from the bundled TTFs. next.config.ts must include src/pdf/fonts in
+// this route's serverless trace (outputFileTracingIncludes) so the files
+// exist in the deployed bundle on Vercel.
 const fontDir = path.join(process.cwd(), 'src/pdf/fonts')
 Font.register({
   family: 'Inter',
@@ -39,7 +40,16 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   wordmark: { fontSize: 26, fontWeight: 700, marginBottom: 8 },
-  title: { fontSize: 22, fontWeight: 700, color: BLACK, marginBottom: 28, textAlign: 'center' },
+  // Clip long titles to 2 lines with an ellipsis so V1 stays a single A4 page.
+  title: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: BLACK,
+    marginBottom: 28,
+    textAlign: 'center',
+    maxLines: 2,
+    textOverflow: 'ellipsis',
+  },
   qr: { width: 300, height: 300, marginBottom: 28 },
   heading: { fontSize: 28, fontWeight: 700, marginBottom: 12, textAlign: 'center' },
   instruction: {
@@ -74,7 +84,7 @@ function PosterDocument({ title, theme, qrDataUrl, shortUrl }: PosterProps) {
   const accent = THEME_GRADIENTS[theme][0]
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" wrap={false} style={styles.page}>
         <View style={[styles.accentBar, { backgroundColor: accent }]} />
         <View style={styles.body}>
           <Text style={[styles.wordmark, { color: accent }]}>Platebník</Text>
