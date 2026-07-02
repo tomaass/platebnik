@@ -46,6 +46,17 @@ export default async function PublicBoard({ params }: { params: Promise<{ token:
   const { token } = await params
   const board = await getBoardByToken(token)
   if (!board) notFound()
+  if (board.archivedAt) {
+    return (
+      <main
+        data-theme={board.theme}
+        style={{ maxWidth: 480, margin: '0 auto', padding: '3rem 1rem', textAlign: 'center' }}
+      >
+        <h1>{board.title}</h1>
+        <p>Tato akce už skončila. Díky všem! 🎉</p>
+      </main>
+    )
+  }
   const host = await db.query.users.findFirst({ where: eq(users.id, board.userId) })
   if (!host?.bankAccountIban) {
     return (
