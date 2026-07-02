@@ -33,11 +33,17 @@ Font.register({
 Font.registerHyphenationCallback((word) => [word])
 // Board titles are free user text and often contain emoji ("Grilovačka 🔥").
 // Inter/Bricolage have no emoji glyphs, so render emoji as Twemoji PNGs instead.
-// If the CDN is unreachable, react-pdf degrades to a blank glyph (verified — it
-// does not throw), so this only ever improves on the plain-font fallback.
+// Trade-off: unlike the bundled fonts, this fetches each distinct emoji from a
+// CDN at render time (cached in-process per warm instance). If the CDN is slow
+// the poster download is slower; if it's unreachable react-pdf degrades to a
+// blank glyph rather than throwing (verified with a cold-cache unreachable-host
+// probe), so it never 500s and only ever improves on the plain-font fallback.
+// If CDN slowness ever shows up in the print.pdf route's function latency, this
+// is the first place to look. Pinned to the latest maintained Twemoji (15.1.0,
+// Unicode 15); emoji newer than that 404 and degrade to blank.
 Font.registerEmojiSource({
   format: 'png',
-  url: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/',
+  url: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/15.1.0/72x72/',
 })
 
 const BLACK = '#111111'
