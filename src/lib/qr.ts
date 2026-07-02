@@ -17,8 +17,13 @@ export const boardFileName = (title: string, ext: string): string => {
   return slug ? `platebnik-${slug}.${ext}` : `platebnik-qr.${ext}`
 }
 
-// PNG data URL for a QR code, black on white. Works in Node and the browser
-// (the `qrcode` package renders PNGs without a DOM canvas). Rendered larger
-// than displayed so it stays crisp on hi-DPI screens and in print.
-export const qrPngDataUrl = (text: string, width = 720): Promise<string> =>
-  QRCode.toDataURL(text, { width, margin: 1, color: QR_COLOR })
+// PNG data URL for a QR code, black on white. Works in Node (renders without a
+// DOM canvas) and in the browser (where `qrcode` uses a canvas element).
+// Rendered larger than displayed so it stays crisp in print and on hi-DPI screens.
+export const qrPngDataUrl = (
+  text: string,
+  width = 720,
+  margin = 1,
+  errorCorrectionLevel: 'L' | 'M' | 'Q' | 'H' = 'M',
+): Promise<string> =>
+  QRCode.toDataURL(text, { width, margin, errorCorrectionLevel, color: QR_COLOR })

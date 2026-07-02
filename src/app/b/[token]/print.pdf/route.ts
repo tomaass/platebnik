@@ -16,7 +16,7 @@ export async function GET(
   if (!board) return new Response('Not found', { status: 404 })
 
   const boardUrl = `${SITE_URL}/b/${token}`
-  const qrDataUrl = await qrPngDataUrl(boardUrl, 1000)
+  const qrDataUrl = await qrPngDataUrl(boardUrl, 1000, 4, 'H')
 
   const pdf = await renderPosterPdf({
     title: board.title,
