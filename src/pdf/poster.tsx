@@ -31,6 +31,14 @@ Font.register({
 })
 // Keep long words intact (URLs, board titles) instead of hyphenating.
 Font.registerHyphenationCallback((word) => [word])
+// Board titles are free user text and often contain emoji ("Grilovačka 🔥").
+// Inter/Bricolage have no emoji glyphs, so render emoji as Twemoji PNGs instead.
+// If the CDN is unreachable, react-pdf degrades to a blank glyph (verified — it
+// does not throw), so this only ever improves on the plain-font fallback.
+Font.registerEmojiSource({
+  format: 'png',
+  url: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/',
+})
 
 const BLACK = '#111111'
 const MUTED = '#555555'

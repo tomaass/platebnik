@@ -39,4 +39,21 @@ NkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
     // Exactly one page — the title guard keeps it single-page, no pagination.
     expect((buffer.toString('latin1').match(/MediaBox/g) || []).length).toBe(1)
   })
+
+  test('renders an emoji title without throwing (emoji source degrades gracefully)', async () => {
+    // Emoji in board titles are rendered via the Twemoji emoji source. Even if
+    // the CDN is unreachable, react-pdf degrades to a blank glyph rather than
+    // throwing — so a valid single A4 PDF must come back either way.
+    const buffer = await renderPosterPdf({
+      title: 'Grilovačka 🔥🍺',
+      theme: 'sunset',
+      shortUrl: 'platebnik.cz/b/EMO123',
+      qrDataUrl:
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42m\
+NkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    })
+    expect(buffer.subarray(0, 4).toString('latin1')).toBe('%PDF')
+    expect(buffer.toString('latin1')).toContain('595.280029 841.890015')
+    expect((buffer.toString('latin1').match(/MediaBox/g) || []).length).toBe(1)
+  })
 })
