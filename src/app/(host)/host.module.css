@@ -145,3 +145,39 @@
   font-size: 13px;
   margin-top: 8px;
 }
+
+.archivedNote {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 4px 0 12px;
+}
+
+.danger {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.dangerRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.archiveBtn {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.deleteBtn {
+  background: var(--surface-alt);
+  border: 1px solid #d1495b;
+  color: #d1495b;
+}
+
+.dangerError {
+  color: #d1495b;
+  font-size: 13px;
+  margin-top: 8px;
+}
