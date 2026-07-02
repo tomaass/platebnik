@@ -1,5 +1,5 @@
 import QRCode from 'qrcode'
-import { stripDiacritics } from '@/domain/spayd'
+import { boardFileName, qrPngDataUrl } from '@/lib/qr'
 
 export interface QrCardInput {
   spayd: string
@@ -17,13 +17,7 @@ export const qrCaption = (input: { title: string; amountFormatted: string }): st
   return `${title} • ${input.amountFormatted} Kč`
 }
 
-export const qrFileName = (title: string): string => {
-  const slug = stripDiacritics(title)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return slug ? `platebnik-${slug}.png` : 'platebnik-qr.png'
-}
+export const qrFileName = (title: string): string => boardFileName(title, 'png')
 
 const FONT_STACK = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 const BRAND_URL = 'platebnik.cz'
@@ -31,9 +25,7 @@ const QR_COLOR = { dark: '#111111', light: '#ffffff' }
 
 // Plain QR for on-screen display (no branding). A data: URL is reliably long-pressable on iOS
 // ("Add to Photos"), unlike inline SVG. Rendered larger than shown so it stays crisp on hi-DPI.
-// Uses canvas under the hood (toDataURL).
-export const renderQrDataUrl = (spayd: string): Promise<string> =>
-  QRCode.toDataURL(spayd, { width: 720, margin: 1, color: QR_COLOR })
+export const renderQrDataUrl = (spayd: string): Promise<string> => qrPngDataUrl(spayd, 720)
 
 // Canvas-free SVG QR for display when canvas/toDataURL is unavailable (some in-app WebViews).
 // Not long-pressable, but keeps the payment QR scannable everywhere. Render it via <QrSvg>,
