@@ -23,6 +23,12 @@ Font.register({
     { src: path.join(fontDir, 'Inter-Bold.ttf'), fontWeight: 700 },
   ],
 })
+// Bricolage Grotesque ExtraBold — the brand display face, matching the web
+// header wordmark "Platebník." (--font-display, weight 800).
+Font.register({
+  family: 'Bricolage',
+  fonts: [{ src: path.join(fontDir, 'BricolageGrotesque-ExtraBold.ttf'), fontWeight: 800 }],
+})
 // Keep long words intact (URLs, board titles) instead of hyphenating.
 Font.registerHyphenationCallback((word) => [word])
 
@@ -39,7 +45,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 56,
     paddingVertical: 48,
   },
-  wordmark: { fontSize: 26, fontWeight: 700, marginBottom: 8 },
+  // Brand wordmark in the display face, dark name + accent dot — mirrors the web header.
+  wordmark: { fontFamily: 'Bricolage', fontWeight: 800, fontSize: 30, color: BLACK, marginBottom: 8 },
   // Clip long titles to 2 lines with an ellipsis so V1 stays a single A4 page.
   title: {
     fontSize: 22,
@@ -87,7 +94,9 @@ function PosterDocument({ title, theme, qrDataUrl, shortUrl }: PosterProps) {
       <Page size="A4" style={styles.page}>
         <View style={[styles.accentBar, { backgroundColor: accent }]} />
         <View style={styles.body}>
-          <Text style={[styles.wordmark, { color: accent }]}>Platebník</Text>
+          <Text style={styles.wordmark}>
+            Platebník<Text style={{ color: accent }}>.</Text>
+          </Text>
           <Text style={styles.title}>{title}</Text>
           {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
           <Image style={styles.qr} src={qrDataUrl} />
