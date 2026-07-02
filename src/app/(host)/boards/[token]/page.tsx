@@ -15,6 +15,9 @@ export default async function BoardDetail({ params }: { params: Promise<{ token:
     <main>
       <h1>{board.title}</h1>
       <BoardWorkspace
+        // Remount per board so the live theme state can't carry over from a
+        // previous board on a client-side board→board navigation.
+        key={token}
         token={token}
         initialTitle={board.title}
         initialItems={board.items.map((it) => ({ name: it.name, priceHaler: it.priceHaler }))}
