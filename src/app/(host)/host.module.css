@@ -87,13 +87,14 @@
 }
 
 .cardMenuBtn {
-  list-style: none;
   cursor: pointer;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: none;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 20px;
@@ -101,11 +102,17 @@
   user-select: none;
 }
 
-.cardMenu[open] .cardMenuBtn {
+.cardMenuBtn[aria-expanded='true'] {
   background: var(--surface-alt);
 }
 
-.cardMenuBtn::-webkit-details-marker { display: none; }
+/* Transparent full-screen catcher: any click outside the open menu closes it,
+   so only one menu is open at a time. Below the menu (z-index 10), above cards. */
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+}
 
 .cardMenuList {
   position: absolute;
