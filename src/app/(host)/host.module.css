@@ -70,8 +70,15 @@
   min-width: 0;
 }
 
+/* Dim archived cards with muted colors, not opacity: opacity < 1 creates a
+   stacking context per card, which would trap the `…` dropdown behind the next
+   card (and fade the menu itself). Muted colors keep the menu crisp and on top. */
 .boardCardArchived {
-  opacity: 0.6;
+  background: var(--surface-alt);
+}
+
+.boardCardArchived .boardCardLink {
+  color: var(--text-muted);
 }
 
 .cardMenu {
