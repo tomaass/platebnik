@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { archiveBoardAction, deleteBoardAction, unarchiveBoardAction } from '../actions'
 import ui from '@/design/ui.module.css'
@@ -14,22 +14,22 @@ interface Props {
 
 export default function BoardDangerZone({ token, title, archived }: Props) {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
-  const run = async (
+  const run = (
     fn: () => Promise<{ error?: string }>,
     after: () => void,
   ) => {
     setError('')
-    setBusy(true)
-    const res = await fn()
-    if (res?.error) {
-      setError(res.error)
-      setBusy(false)
-      return
-    }
-    after()
+    startTransition(async () => {
+      const res = await fn()
+      if (res?.error) {
+        setError(res.error)
+        return
+      }
+      after()
+    })
   }
 
   const archive = () => run(() => archiveBoardAction(token), () => router.refresh())
@@ -44,13 +44,13 @@ export default function BoardDangerZone({ token, title, archived }: Props) {
       {archived ? (
         <div className={s.dangerRow}>
           <button
-            type="button" disabled={busy} onClick={unarchive}
+            type="button" disabled={isPending} onClick={unarchive}
             className={`${ui.btn} ${s.archiveBtn}`}
           >
             Odarchivovat
           </button>
           <button
-            type="button" disabled={busy} onClick={remove}
+            type="button" disabled={isPending} onClick={remove}
             className={`${ui.btn} ${s.deleteBtn}`}
           >
             Smazat akci
@@ -58,7 +58,7 @@ export default function BoardDangerZone({ token, title, archived }: Props) {
         </div>
       ) : (
         <button
-          type="button" disabled={busy} onClick={archive}
+          type="button" disabled={isPending} onClick={archive}
           className={`${ui.btn} ${s.archiveBtn}`}
         >
           Archivovat akci

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { archiveBoardAction, deleteBoardAction, unarchiveBoardAction } from '../actions'
 import s from '../host.module.css'
@@ -14,17 +14,17 @@ interface Props {
 
 export default function BoardCard({ token, title, archived }: Props) {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
-  const act = async (fn: () => Promise<{ error?: string }>) => {
-    setBusy(true)
-    const res = await fn()
-    if (res?.error) {
-      window.alert(res.error)
-      setBusy(false)
-      return
-    }
-    router.refresh()
+  const act = (fn: () => Promise<{ error?: string }>) => {
+    startTransition(async () => {
+      const res = await fn()
+      if (res?.error) {
+        window.alert(res.error)
+        return
+      }
+      router.refresh()
+    })
   }
   const remove = () => {
     if (!window.confirm(`Opravdu smazat akci „${title}"? Nevratně zmizí i všechny příspěvky.`)) return
@@ -39,13 +39,13 @@ export default function BoardCard({ token, title, archived }: Props) {
         <div className={s.cardMenuList}>
           {archived ? (
             <>
-              <button type="button" disabled={busy} onClick={() => act(() => unarchiveBoardAction(token))}>
+              <button type="button" disabled={isPending} onClick={() => act(() => unarchiveBoardAction(token))}>
                 Odarchivovat
               </button>
-              <button type="button" disabled={busy} onClick={remove}>Smazat</button>
+              <button type="button" disabled={isPending} onClick={remove}>Smazat</button>
             </>
           ) : (
-            <button type="button" disabled={busy} onClick={() => act(() => archiveBoardAction(token))}>
+            <button type="button" disabled={isPending} onClick={() => act(() => archiveBoardAction(token))}>
               Archivovat
             </button>
           )}
