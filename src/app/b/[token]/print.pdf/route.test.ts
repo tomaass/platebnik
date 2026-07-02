@@ -24,7 +24,13 @@ describe('GET /b/[token]/print.pdf', () => {
     const bytes = Buffer.from(await res.arrayBuffer())
     expect(bytes.subarray(0, 4).toString('latin1')).toBe('%PDF')
     // Attributed to the host (board.userId), not the board token — keeps the funnel intact.
-    expect(track).toHaveBeenCalledWith('board_print_pdf', 'host-1', { board_token: 'ABC123' })
+    // Exact object match (so an accidental extra/PII property would fail); render_ms is a
+    // non-deterministic timing, matched by shape.
+    expect(track).toHaveBeenCalledWith(
+      'board_print_pdf',
+      'host-1',
+      { board_token: 'ABC123', render_ms: expect.any(Number) },
+    )
   })
 
   test('returns 404 for an unknown board', async () => {
