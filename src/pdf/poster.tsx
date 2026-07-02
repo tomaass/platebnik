@@ -35,6 +35,14 @@ Font.registerHyphenationCallback((word) => [word])
 const BLACK = '#111111'
 const MUTED = '#555555'
 
+// Flat accent per theme. Sunset uses the gradient's pink end (`[1]`) rather than
+// the orange start — orange on a poster reads like a warning. Green keeps its
+// vivid start (`[0]`).
+const POSTER_ACCENT: Record<ThemeKey, string> = {
+  sunset: THEME_GRADIENTS.sunset[1],
+  green: THEME_GRADIENTS.green[0],
+}
+
 const styles = StyleSheet.create({
   page: { backgroundColor: '#ffffff', fontFamily: 'Inter' },
   accentBar: { height: 10, width: '100%' },
@@ -88,7 +96,7 @@ export interface PosterProps {
 
 // Single A4 portrait poster. Accent is the theme's flat primary (`from`) stop.
 function PosterDocument({ title, theme, qrDataUrl, shortUrl }: PosterProps) {
-  const accent = THEME_GRADIENTS[theme][0]
+  const accent = POSTER_ACCENT[theme]
   return (
     <Document>
       <Page size="A4" style={styles.page}>
