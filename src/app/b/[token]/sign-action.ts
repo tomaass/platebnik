@@ -35,6 +35,7 @@ export const signAction = async (input: {
 
   const board = await db.query.boards.findFirst({ where: eq(boards.token, input.token) })
   if (!board) return { ok: false, error: 'Board neexistuje' }
+  if (board.archivedAt) return { ok: false, error: 'Tato akce už skončila.' }
 
   const contributionCount = await countContributionsByBoard(input.token)
   if (contributionCount >= MAX_CONTRIBUTIONS_PER_BOARD) {

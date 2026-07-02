@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireUser } from '@/auth/config'
 import { listBoardsByUser } from '@/db/boards'
 import ui from '@/design/ui.module.css'
+import BoardList from './BoardList'
 import s from '../host.module.css'
 
 export default async function Boards() {
@@ -14,13 +15,7 @@ export default async function Boards() {
       {boards.length === 0 ? (
         <p className={s.empty}>Zatím žádná akce. Vytvoř první a nasdílej partě. 🍺</p>
       ) : (
-        <ul className={s.list}>
-          {boards.map((b) => (
-            <li key={b.token}>
-              <Link href={`/boards/${b.token}`} className={s.boardCard}>{b.title}</Link>
-            </li>
-          ))}
-        </ul>
+        <BoardList boards={boards} />
       )}
     </main>
   )

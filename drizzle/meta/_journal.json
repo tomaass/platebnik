@@ -15,6 +15,13 @@
       "when": 1782465847957,
       "tag": "0001_windy_magdalene",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782995180781,
+      "tag": "0002_black_war_machine",
+      "breakpoints": true
     }
   ]
 }

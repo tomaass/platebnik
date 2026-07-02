@@ -52,15 +52,102 @@
 }
 
 .boardCard {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   padding: 16px;
+}
+
+.boardCardLink {
+  flex: 1;
   font-weight: 700;
   font-size: 16px;
   color: var(--text);
+  min-width: 0;
+}
+
+/* Dim archived cards with muted colors, not opacity: opacity < 1 creates a
+   stacking context per card, which would trap the `…` dropdown behind the next
+   card (and fade the menu itself). Muted colors keep the menu crisp and on top. */
+.boardCardArchived {
+  background: var(--surface-alt);
+}
+
+.boardCardArchived .boardCardLink {
+  color: var(--text-muted);
+}
+
+.cardMenu {
+  position: relative;
+  flex: none;
+}
+
+.cardMenuBtn {
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  user-select: none;
+}
+
+.cardMenuBtn[aria-expanded='true'] {
+  background: var(--surface-alt);
+}
+
+/* Transparent full-screen catcher: any click outside the open menu closes it,
+   so only one menu is open at a time. Below the menu (z-index 10), above cards. */
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+}
+
+.cardMenuList {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.cardMenuList button {
+  text-align: left;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cardMenuList button:hover {
+  background: var(--surface-alt);
+}
+
+.archivedHeading {
+  margin-top: 28px;
+  font-size: 15px;
+  color: var(--text-muted);
 }
 
 .empty {
@@ -154,6 +241,42 @@
 
 .iban {
   color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.archivedNote {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 4px 0 12px;
+}
+
+.danger {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.dangerRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.archiveBtn {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.deleteBtn {
+  background: var(--surface-alt);
+  border: 1px solid #d1495b;
+  color: #d1495b;
+}
+
+.dangerError {
+  color: #d1495b;
   font-size: 13px;
   margin-top: 8px;
 }

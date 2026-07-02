@@ -6,7 +6,7 @@ import { requireUser } from '@/auth/config'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
 import {
-  createBoard, deleteBoard, updateBoard,
+  archiveBoard, createBoard, deleteBoard, getBoardByToken, unarchiveBoard, updateBoard,
 } from '@/db/boards'
 import { setPaid } from '@/db/contributions'
 import { czAccountToIban } from '@/domain/iban'
@@ -59,10 +59,33 @@ export const updateBoardAction = async (
   return {}
 }
 
-export const deleteBoardAction = async (token: string): Promise<void> => {
+export const archiveBoardAction = async (token: string): Promise<{ error?: string }> => {
   const user = await requireUser()
-  await deleteBoard(token, user.id)
+  await archiveBoard(token, user.id)
+  await track('board_archived', user.id, { board_token: token })
   revalidatePath('/boards')
+  revalidatePath(`/boards/${token}`)
+  return {}
+}
+
+export const unarchiveBoardAction = async (token: string): Promise<{ error?: string }> => {
+  const user = await requireUser()
+  await unarchiveBoard(token, user.id)
+  revalidatePath('/boards')
+  revalidatePath(`/boards/${token}`)
+  return {}
+}
+
+export const deleteBoardAction = async (token: string): Promise<{ error?: string }> => {
+  const user = await requireUser()
+  // Deletion is only allowed after archiving (flow: archive -> delete).
+  const board = await getBoardByToken(token)
+  if (!board || board.userId !== user.id) return { error: 'Akce nenalezena' }
+  if (!board.archivedAt) return { error: 'Akci lze smazat až po archivaci.' }
+  await deleteBoard(token, user.id)
+  await track('board_deleted', user.id, { board_token: token })
+  revalidatePath('/boards')
+  return {}
 }
 
 export const setPaidAction = async (id: string, paid: boolean): Promise<void> => {
