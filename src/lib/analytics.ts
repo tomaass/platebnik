@@ -6,8 +6,13 @@ import { PostHog } from 'posthog-node'
 // which covers anonymous traffic/pageviews.
 
 type AnalyticsEvent =
-  | 'user_registered' | 'board_created' | 'board_signed' | 'board_paid'
-  | 'board_archived' | 'board_deleted'
+  | 'user_registered'
+  | 'board_created'
+  | 'board_signed'
+  | 'board_paid'
+  | 'board_print_pdf'
+  | 'board_archived'
+  | 'board_deleted'
 
 type Properties = Record<string, string | number | boolean | null | undefined>
 

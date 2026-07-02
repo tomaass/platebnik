@@ -192,6 +192,18 @@
   color: #fff;
 }
 
+.sharePrint {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  color: #111;
+  text-decoration: none;
+}
+
 .contribList {
   list-style: none;
   padding: 0;

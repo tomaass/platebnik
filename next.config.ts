@@ -1,6 +1,10 @@
 import type { NextConfig } from 'next'
 
 const config: NextConfig = {
+  serverExternalPackages: ['@react-pdf/renderer'],
+  outputFileTracingIncludes: {
+    '/b/[token]/print.pdf': ['./src/pdf/fonts/**'],
+  },
   async redirects() {
     return [{
       source: '/:path*',
