@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import s from '../host.module.css'
 import QrSvg from '@/components/QrSvg'
+import { QR_COLOR } from '@/lib/qr'
 
 export default function SharePanel({ token }: { token: string }) {
   const [svg, setSvg] = useState('')
@@ -11,7 +12,7 @@ export default function SharePanel({ token }: { token: string }) {
 
   useEffect(() => {
     if (!url) return
-    QRCode.toString(url, { type: 'svg', margin: 1, color: { dark: '#111111', light: '#ffffff' } }).then(setSvg)
+    QRCode.toString(url, { type: 'svg', margin: 1, color: QR_COLOR }).then(setSvg)
   }, [url])
 
   return (

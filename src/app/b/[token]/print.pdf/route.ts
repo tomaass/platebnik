@@ -25,7 +25,10 @@ export async function GET(
     shortUrl: `${SITE_HOST}/b/${token}`,
   })
 
-  await track('board_print_pdf', token, { token })
+  // Attribute to the board's host (board.userId) so it lands on the same
+  // PostHog person as board_created / board_paid — otherwise this event drops
+  // out of the host funnel. board_token stays as a property for breakdowns.
+  await track('board_print_pdf', board.userId, { board_token: token })
 
   return new Response(new Uint8Array(pdf), {
     headers: {

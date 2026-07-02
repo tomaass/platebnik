@@ -16,14 +16,15 @@ describe('GET /b/[token]/print.pdf', () => {
   beforeEach(() => vi.clearAllMocks())
 
   test('returns a PDF for a known board and tracks the event', async () => {
-    vi.mocked(getBoardMeta).mockResolvedValue({ title: 'Táborák u Bédi', theme: 'sunset' })
+    vi.mocked(getBoardMeta).mockResolvedValue({ title: 'Táborák u Bédi', theme: 'sunset', userId: 'host-1' })
     const res = await call('ABC123')
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('application/pdf')
     expect(res.headers.get('content-disposition')).toContain('platebnik-taborak-u-bedi.pdf')
     const bytes = Buffer.from(await res.arrayBuffer())
     expect(bytes.subarray(0, 4).toString('latin1')).toBe('%PDF')
-    expect(track).toHaveBeenCalledWith('board_print_pdf', 'ABC123', { token: 'ABC123' })
+    // Attributed to the host (board.userId), not the board token — keeps the funnel intact.
+    expect(track).toHaveBeenCalledWith('board_print_pdf', 'host-1', { board_token: 'ABC123' })
   })
 
   test('returns 404 for an unknown board', async () => {

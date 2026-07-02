@@ -1,7 +1,8 @@
 import QRCode from 'qrcode'
 import { stripDiacritics } from '@/domain/spayd'
 
-const QR_COLOR = { dark: '#111111', light: '#ffffff' }
+// Brand QR colors — shared by the printed PDF QR and the on-screen SVG QR so they can't drift.
+export const QR_COLOR = { dark: '#111111', light: '#ffffff' }
 
 // Slug from a board title: diacritics dropped, lowercased, non-alphanumerics
 // collapsed to single dashes, trimmed. Empty string when nothing remains.
