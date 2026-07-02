@@ -57,15 +57,42 @@ for the existing per-person "Uložit QR" card.)
 
 Vertically centered, generous margins:
 
-- **Wordmark:** `Platebník` (top).
-- **Board title** (the board's name).
+- **Thin accent bar** at the very top (board's theme color).
+- **Wordmark:** `🍺 Platebník` — the "P"/wordmark in the board's theme color.
+- **Board title** (the board's name), in black.
 - **Large QR** encoding the board URL — the dominant element, sized so it
-  scans easily from a poster on a wall.
-- **Instruction line** (see copy below).
+  scans easily from a poster on a wall. Pure black on white, generous quiet
+  zone.
+- **Heading** „Zaplať svoji útratu" (board's theme color).
+- **Instruction line** (see copy below), in black.
+- **Fallback link** `platebnik.cz/b/<token>` in black — so someone can type the
+  URL if the QR won't scan.
 - **Footer:** `platebnik.cz`.
 
 Title truncation: reuse the existing caption-truncation approach so long board
 names don't break the layout.
+
+## Print design (ink-frugal + grayscale-safe)
+
+The poster must look good printed in color **and** stay fully functional
+printed black-and-white, without draining the printer's ink.
+
+- **White paper, no full-bleed gradient.** A flooded background wastes toner
+  and turns muddy gray in B&W. Background stays white; color appears only as
+  small accents.
+- **Color is decoration, never content.** Every load-bearing element (QR,
+  instructions, fallback link) is black. Only the wordmark, top accent bar, and
+  heading carry the board's theme color, so a grayscale print loses nothing.
+- **QR always pure black on white** (existing `#111111`/`#fff`), never tinted
+  or over a gradient — protects both scan reliability and B&W legibility.
+- **Accent color = flat, single tone** for V1: the board theme's primary
+  (`from`) stop from `THEME_GRADIENTS[board.theme]` (default sunset `#ff9a3d`).
+  A flat tone prints predictably and uses minimal ink.
+  - _Future upgrade (easy):_ swap the flat accent for the full theme gradient
+    via `@react-pdf/renderer`'s SVG `LinearGradient` on the wordmark/bar. Left
+    out of V1 because gradients can band in print and vanish in grayscale.
+- The board's `theme` field (`THEME_KEYS`: `sunset` | `green`, default
+  `sunset`) drives the accent, tying the poster to that specific board.
 
 ## Copy (Czech, user-facing)
 
