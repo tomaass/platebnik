@@ -23,20 +23,6 @@
   color: var(--accent);
 }
 
-.navLink {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text);
-}
-
-.signout {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-weight: 600;
-  font-size: 14px;
-}
-
 .newBtn {
   display: inline-block;
   margin-bottom: 16px;
