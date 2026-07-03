@@ -124,6 +124,11 @@ evaluation, morning email, cron schedule, secret-protected endpoint.
 **Out (later):** Vercel function/deploy metrics, historical storage/dashboards,
 Slack/other channels, hard-alert-only mode, per-user reports.
 
+**Known limitation (v1):** the "conversion" the digest reports is derived from
+independent daily event counts (created/signed/paid volumes), not a true
+per-user HogQL funnel — so it's a ratio of daily volumes, not a tracked user
+path. A real cohort funnel is a later iteration.
+
 ## Decisions
 
 1. **Delivery = email to `tomas@sorejs.cz`** via the existing SMTP. ✅ confirmed.
