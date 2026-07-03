@@ -52,6 +52,24 @@ describe('fetchProductMetrics', () => {
     expect((init as RequestInit).headers).toMatchObject({ Authorization: 'Bearer phx_test' })
   })
 
+  test('treats an empty render_ms p95 (NaN) as null', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      // 1st call: event counts
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ results: [['user_registered', 1, 7]] }),
+          { status: 200 },
+        ),
+      )
+      // 2nd call: p95 over zero rows -> null
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ results: [[null]] }), { status: 200 }),
+      )
+
+    const m = await fetchProductMetrics()
+    expect(m.renderMsP95).toBeNull()
+  })
+
   test('throws when credentials are missing', async () => {
     delete process.env.POSTHOG_PERSONAL_API_KEY
     await expect(fetchProductMetrics()).rejects.toThrow('POSTHOG_PERSONAL_API_KEY')

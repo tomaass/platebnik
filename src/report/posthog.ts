@@ -51,7 +51,10 @@ export async function fetchProductMetrics(): Promise<ProductMetrics> {
       AND properties.render_ms IS NOT NULL
   `)
   const raw = p95rows[0]?.[0]
-  const renderMsP95 = raw == null ? null : Math.round(Number(raw))
+  // ClickHouse quantile() over zero rows returns nan (a value, not SQL NULL);
+  // treat both null and NaN as "no data" so renderMsP95 stays whole-or-null.
+  const parsed = raw == null ? NaN : Number(raw)
+  const renderMsP95 = Number.isNaN(parsed) ? null : Math.round(parsed)
 
   return { events, renderMsP95 }
 }
