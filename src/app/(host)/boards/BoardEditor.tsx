@@ -18,6 +18,9 @@ interface Props {
   initialTitle?: string
   initialItems?: ItemInput[]
   initialTheme?: ThemeKey
+  // Notifies a parent when the live (unsaved) theme changes, so sibling UI
+  // (e.g. the share panel) can re-theme along with the editor preview.
+  onThemeChange?: (theme: ThemeKey) => void
 }
 
 // The editor keeps each row's price as the raw string the user typed (so
@@ -54,7 +57,7 @@ function Field({
 }
 
 export default function BoardEditor({
-  token, initialTitle = '', initialItems = [], initialTheme = DEFAULT_THEME,
+  token, initialTitle = '', initialItems = [], initialTheme = DEFAULT_THEME, onThemeChange,
 }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState(initialTitle)
@@ -62,6 +65,10 @@ export default function BoardEditor({
     () => initialItems.map((it) => ({ id: nanoid(), name: it.name, price: formatPrice(it.priceHaler) })),
   )
   const [theme, setTheme] = useState<ThemeKey>(initialTheme)
+  const selectTheme = (key: ThemeKey) => {
+    setTheme(key)
+    onThemeChange?.(key)
+  }
   const [savedSnapshot, setSavedSnapshot] = useState<BoardFormState>({
     title: initialTitle, items: initialItems, theme: initialTheme,
   })
@@ -182,9 +189,9 @@ export default function BoardEditor({
           <div
             key={t.key} data-theme={t.key}
             className={`${s.theme} ${theme === t.key ? s.themeOn : ''}`}
-            onClick={() => setTheme(t.key)}
+            onClick={() => selectTheme(t.key)}
             role="button" tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTheme(t.key) } }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTheme(t.key) } }}
           >
             <div className={s.themePrev} />
             <div className={s.themeName}>{t.label}{theme === t.key ? ' ✓' : ''}</div>
