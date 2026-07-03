@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { SessionProvider } from 'next-auth/react'
+import { UserNav } from './UserNav'
 import s from './page.module.css'
 
 export default function Home() {
@@ -6,7 +8,10 @@ export default function Home() {
     <main className={s.page}>
       <nav className={s.nav}>
         <span className={s.logo}>Platebník<span className={s.dot}>.</span></span>
-        <Link className={s.login} href="/signin">Přihlásit</Link>
+        {/* Session read on the client so this marketing page stays statically prerendered. */}
+        <SessionProvider>
+          <UserNav />
+        </SessionProvider>
       </nav>
 
       <section className={s.hero}>

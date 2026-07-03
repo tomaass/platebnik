@@ -1,0 +1,30 @@
+.login {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.link {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.signout {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
