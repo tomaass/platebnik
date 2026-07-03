@@ -124,9 +124,9 @@ evaluation, morning email, cron schedule, secret-protected endpoint.
 **Out (later):** Vercel function/deploy metrics, historical storage/dashboards,
 Slack/other channels, hard-alert-only mode, per-user reports.
 
-## Open questions for review
+## Decisions
 
-1. Delivery = email to `tomas@sorejs.cz` — confirm (vs. GitHub issue / Slack).
-2. Cadence = daily digest even when all-green — confirm (vs. only-when-problem).
-3. Provisioning the new secrets (esp. PostHog Personal API key) — you'll need to
-   create them; the plan will list exact steps.
+1. **Delivery = email to `tomas@sorejs.cz`** via the existing SMTP. ✅ confirmed.
+2. **Cadence = daily digest, even when all-green.** ✅ confirmed.
+3. Provisioning the new secrets (esp. the PostHog Personal API key) — the user
+   creates them; the plan lists exact steps.
