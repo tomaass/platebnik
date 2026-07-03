@@ -8,6 +8,7 @@ const guard = async <T>(fn: () => Promise<T>): Promise<T | { error: string }> =>
   try {
     return await fn()
   } catch (e) {
+    console.error('[daily-report] metric source failed:', e)
     return { error: e instanceof Error ? e.message : String(e) }
   }
 }

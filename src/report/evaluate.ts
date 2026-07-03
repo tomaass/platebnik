@@ -32,7 +32,8 @@ export async function evaluateMetrics(m: Metrics): Promise<string> {
   try {
     const { text } = await generateText({ model: MODEL, prompt: buildPrompt(m) })
     return text
-  } catch {
+  } catch (e) {
+    console.error('[daily-report] evaluation failed, using raw fallback:', e)
     return rawFallback(m)
   }
 }

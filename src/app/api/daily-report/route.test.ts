@@ -39,4 +39,11 @@ describe('GET /api/daily-report', () => {
     expect(subject).toContain('Platebník — ranní přehled')
     expect(body).toBe('🟢 vše OK')
   })
+
+  test('500 when gathering metrics fails; no email sent', async () => {
+    vi.mocked(gatherMetrics).mockRejectedValue(new Error('boom'))
+    const res = await call('Bearer top-secret')
+    expect(res.status).toBe(500)
+    expect(sendReportEmail).not.toHaveBeenCalled()
+  })
 })

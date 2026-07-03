@@ -17,8 +17,13 @@ export async function GET(req: Request): Promise<Response> {
   if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
     return new Response('Unauthorized', { status: 401 })
   }
-  const metrics = await gatherMetrics(pragueIsoDate())
-  const body = await evaluateMetrics(metrics)
-  await sendReportEmail(`Platebník — ranní přehled (${pragueHumanDate()})`, body)
-  return Response.json({ ok: true })
+  try {
+    const metrics = await gatherMetrics(pragueIsoDate())
+    const body = await evaluateMetrics(metrics)
+    await sendReportEmail(`Platebník — ranní přehled (${pragueHumanDate()})`, body)
+    return Response.json({ ok: true })
+  } catch (e) {
+    console.error('[daily-report] failed to build/send report:', e)
+    return new Response('Report failed', { status: 500 })
+  }
 }
