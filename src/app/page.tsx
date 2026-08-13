@@ -22,6 +22,7 @@ export default function Home() {
           Každý zaplatí přímo tobě — bez kalkulačky.
         </p>
         <Link className={s.cta} href="/boards">Vytvořit akci →</Link>
+        <Link className={s.ctaGhost} href="/demo">Vyzkoušet demo →</Link>
         <div className={s.ctaSub}>Zdarma · bez instalace · platba přes QR do tvé banky</div>
       </section>
 

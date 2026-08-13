@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import * as R from 'remeda'
 import type { ThemeKey } from '@/design/themes'
@@ -27,6 +28,9 @@ interface Props {
   items: ClientItem[]
   tipPercents: number[]
   theme: ThemeKey
+  // Demo mode (/demo): no board row exists — signing is played out locally and
+  // the UI carries showcase copy instead of a real event's.
+  demo?: boolean
 }
 
 export default function BoardClient(props: Props) {
@@ -123,6 +127,10 @@ export default function BoardClient(props: Props) {
 
   const sign = async () => {
     setSignError(undefined)
+    if (props.demo) {
+      setSigned(true)
+      return
+    }
     const res = await signAction({
       token: props.token, name: name || undefined, message: message || undefined,
       selectionSnapshot: entries.map((e) => ({ name: e.name, quantity: e.quantity })),
@@ -140,6 +148,11 @@ export default function BoardClient(props: Props) {
   return (
     <main data-theme={props.theme} className={s.page}>
       <div className={s.inner}>
+        {props.demo && (
+          <Link className={s.demoBanner} href="/boards">
+            Tohle je ukázková akce. Líbí se? <b>Vytvoř si vlastní za minutu →</b>
+          </Link>
+        )}
         <div className={s.head}>
           <span style={{ fontSize: 22 }}>🔥</span>
           <span className={s.title}>{props.title}</span>
@@ -185,6 +198,12 @@ export default function BoardClient(props: Props) {
             )}
 
             <div className={s.qrBadge}>▢ QR Platba</div>
+
+            {props.demo && (
+              <p className={s.demoNote}>
+                Tenhle QR je naostro — zaplacením kupuješ autorovi Platebníku pivo 🍺 Díky!
+              </p>
+            )}
 
             {qr?.kind === 'png' ? (
               <>
