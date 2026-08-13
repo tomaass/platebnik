@@ -6,10 +6,37 @@ import { db } from '@/db/client'
 import { boards } from '@/db/schema'
 import { createContribution, countContributionsByBoard } from '@/db/contributions'
 import { contributionSchema } from '@/domain/validation'
+import { MAX_CONTRIBUTION_HALER } from '@/domain/limits'
 import { track } from '@/lib/analytics'
 import { checkRateLimit } from '@/lib/rateLimit'
 
 const MAX_CONTRIBUTIONS_PER_BOARD = 1000
+
+const isPlausibleHaler = (v: number): boolean =>
+  Number.isInteger(v) && v >= 0 && v <= MAX_CONTRIBUTION_HALER
+
+/**
+ * Analytics-only counterpart of signAction for the /demo board (which has no
+ * DB row). Demo signatures are the landing funnel's key engagement moment;
+ * they aggregate under the fixed distinct id 'demo' since visitors are
+ * anonymous. Never returns an error — the demo flow must not depend on it.
+ */
+export const demoSignAction = async (input: {
+  amountHaler: number
+  tipHaler: number
+  hasName: boolean
+  hasMessage: boolean
+}): Promise<void> => {
+  const ip = (await headers()).get('x-forwarded-for') ?? 'unknown'
+  if (!(await checkRateLimit(`${ip}:demo`, 'write'))) return
+  if (!isPlausibleHaler(input.amountHaler) || !isPlausibleHaler(input.tipHaler)) return
+  await track('board_demo_signed', 'demo', {
+    amount_haler: input.amountHaler,
+    tip_haler: input.tipHaler,
+    has_name: input.hasName,
+    has_message: input.hasMessage,
+  })
+}
 
 export const signAction = async (input: {
   token: string

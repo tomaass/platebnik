@@ -1,11 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import * as R from 'remeda'
 import type { ThemeKey } from '@/design/themes'
 import { itemsSubtotal, selectionTotal, tipFromPercent } from '@/domain/pricing'
 import { buildSpayd, formatAmount } from '@/domain/spayd'
-import { signAction } from './sign-action'
+import { demoSignAction, signAction } from './sign-action'
+import { MAX_MESSAGE, MAX_NAME } from '@/domain/limits'
 import { renderQrDataUrl, renderQrSvg, renderQrCard, shareOrDownload, qrFileName, canUseCanvas } from './save-qr'
 import ui from '@/design/ui.module.css'
 import s from './BoardClient.module.css'
@@ -18,15 +20,20 @@ const CARD_DEBOUNCE_MS = 300
 // for WebViews where canvas is unavailable.
 type LiveQr = { kind: 'png'; url: string } | { kind: 'svg'; markup: string }
 
-interface ClientItem { id: string; name: string; priceHaler: number }
+export interface ClientItem { id: string; name: string; priceHaler: number }
 interface Props {
   token: string
   title: string
   iban: string
   variableSymbol: string
-  items: ClientItem[]
-  tipPercents: number[]
+  items: readonly ClientItem[]
+  tipPercents: readonly number[]
   theme: ThemeKey
+  // Demo mode (/demo): no board row exists — signing is played out locally and
+  // the UI carries showcase copy. 'live' → the QR pays the author's real
+  // account and the copy says so; 'sandbox' → placeholder account, the copy
+  // must not claim the payment goes anywhere.
+  demo?: 'live' | 'sandbox'
 }
 
 export default function BoardClient(props: Props) {
@@ -123,6 +130,14 @@ export default function BoardClient(props: Props) {
 
   const sign = async () => {
     setSignError(undefined)
+    if (props.demo) {
+      setSigned(true)
+      // Fire-and-forget funnel event; analytics must never block or break the demo.
+      void demoSignAction({
+        amountHaler: total, tipHaler, hasName: name !== '', hasMessage: message !== '',
+      }).catch(() => {})
+      return
+    }
     const res = await signAction({
       token: props.token, name: name || undefined, message: message || undefined,
       selectionSnapshot: entries.map((e) => ({ name: e.name, quantity: e.quantity })),
@@ -140,6 +155,11 @@ export default function BoardClient(props: Props) {
   return (
     <main data-theme={props.theme} className={s.page}>
       <div className={s.inner}>
+        {props.demo && (
+          <Link className={s.demoBanner} href="/boards">
+            Tohle je ukázková akce. Líbí se? <b>Vytvoř si vlastní za minutu →</b>
+          </Link>
+        )}
         <div className={s.head}>
           <span style={{ fontSize: 22 }}>🔥</span>
           <span className={s.title}>{props.title}</span>
@@ -186,6 +206,17 @@ export default function BoardClient(props: Props) {
 
             <div className={s.qrBadge}>▢ QR Platba</div>
 
+            {props.demo === 'live' && (
+              <p className={s.demoNote}>
+                Tenhle QR je naostro — zaplacením kupuješ autorovi Platebníku pivo 🍺 Díky!
+              </p>
+            )}
+            {props.demo === 'sandbox' && (
+              <p className={s.demoNote}>
+                Ukázkový QR — míří na neexistující účet, platba nikam nedojde.
+              </p>
+            )}
+
             {qr?.kind === 'png' ? (
               <>
                 <button
@@ -205,8 +236,8 @@ export default function BoardClient(props: Props) {
             {!signed ? (
               <div className={s.sign}>
                 <p className={s.signPrompt}>Podepiš se, ať hostitel ví, kdo platil 🙂</p>
-                <input className={ui.field} placeholder="Jméno (třeba Pepa)" value={name} onChange={(e) => setName(e.target.value)} />
-                <input className={ui.field} placeholder="Vzkaz (nepovinné)" value={message} onChange={(e) => setMessage(e.target.value)} />
+                <input className={ui.field} placeholder="Jméno (třeba Pepa)" maxLength={MAX_NAME} value={name} onChange={(e) => setName(e.target.value)} />
+                <input className={ui.field} placeholder="Vzkaz (nepovinné)" maxLength={MAX_MESSAGE} value={message} onChange={(e) => setMessage(e.target.value)} />
                 <button className={`${ui.btn} ${ui.btnPrimary}`} onClick={sign}>Podepsat se</button>
                 {signError && <p className={s.signError}>{signError}</p>}
               </div>

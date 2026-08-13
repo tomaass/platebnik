@@ -64,6 +64,19 @@
   margin-bottom: 10px;
 }
 
+.ctaGhost {
+  display: block;
+  text-align: center;
+  background: var(--surface-alt);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 13px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
 .ctaSub {
   text-align: center;
   font-size: 13px;

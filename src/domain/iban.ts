@@ -26,3 +26,16 @@ export const czAccountToIban = (raw: string): string | null => {
 }
 
 export const isValidCzAccount = (raw: string): boolean => czAccountToIban(raw) !== null
+
+// ČNB mod-11: váha číslice na pozici i (zprava) je 2^i mod 11; vážený součet
+// každé části (předčíslí i číslo zvlášť) musí být dělitelný 11.
+const mod11Ok = (digits: string): boolean =>
+  [...digits]
+    .reverse()
+    .reduce((sum, ch, i) => sum + Number(ch) * (2 ** i % 11), 0) % 11 === 0
+
+export const isCzAccountChecksumValid = (raw: string): boolean => {
+  const parsed = parseCzAccount(raw)
+  if (!parsed) return false
+  return (parsed.prefix === '' || mod11Ok(parsed.prefix)) && mod11Ok(parsed.number)
+}
