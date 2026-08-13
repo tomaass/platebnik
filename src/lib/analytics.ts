@@ -9,6 +9,7 @@ type AnalyticsEvent =
   | 'user_registered'
   | 'board_created'
   | 'board_signed'
+  | 'board_demo_signed'
   | 'board_paid'
   | 'board_print_pdf'
   | 'board_archived'

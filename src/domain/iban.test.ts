@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { czAccountToIban, isValidCzAccount, parseCzAccount } from './iban'
+import { czAccountToIban, isCzAccountChecksumValid, isValidCzAccount, parseCzAccount } from './iban'
 
 describe('parseCzAccount', () => {
   test('účet s předčíslím', () => {
@@ -34,4 +34,21 @@ describe('czAccountToIban', () => {
 describe('isValidCzAccount', () => {
   test('platný', () => { expect(isValidCzAccount('19-2000145399/0800')).toBe(true) })
   test('neplatný', () => { expect(isValidCzAccount('xx')).toBe(false) })
+})
+
+describe('isCzAccountChecksumValid', () => {
+  test('přijme účty s platným mod-11 (s předčíslím i bez)', () => {
+    expect(isCzAccountChecksumValid('19-2000145399/0800')).toBe(true)
+    expect(isCzAccountChecksumValid('80200589/0300')).toBe(true)
+  })
+  test('odmítne formátově validní číslo s neplatným mod-11', () => {
+    // vážený součet 7777777 je 273, 273 % 11 = 9
+    expect(isCzAccountChecksumValid('7777777/0710')).toBe(false)
+  })
+  test('odmítne neplatné předčíslí i při platném čísle', () => {
+    expect(isCzAccountChecksumValid('1-2000145399/0800')).toBe(false)
+  })
+  test('odmítne neparsovatelný vstup', () => {
+    expect(isCzAccountChecksumValid('nesmysl')).toBe(false)
+  })
 })

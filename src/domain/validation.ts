@@ -1,14 +1,13 @@
 import { z } from 'zod'
 import { isValidCzAccount } from './iban'
 import { DEFAULT_THEME, THEME_KEYS } from '@/design/themes'
+import {
+  MAX_CONTRIBUTION_HALER, MAX_ITEM_NAME, MAX_ITEMS, MAX_MESSAGE, MAX_NAME,
+  MAX_PRICE_HALER, MAX_TITLE,
+} from './limits'
 
-export const MAX_TITLE = 80
-export const MAX_ITEM_NAME = 60
-export const MAX_ITEMS = 100
-export const MAX_PRICE_HALER = 100_000_00 // 100 000 Kč
-export const MAX_NAME = 40
-export const MAX_MESSAGE = 280
-export const MAX_CONTRIBUTION_HALER = 100_000_00 // 100 000 Kč
+// Re-export so existing importers keep a single entry point.
+export * from './limits'
 
 export const accountSchema = z.object({
   account: z.string().trim().refine(isValidCzAccount, 'Neplatné číslo účtu'),
