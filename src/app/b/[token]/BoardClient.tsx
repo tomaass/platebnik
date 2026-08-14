@@ -204,7 +204,7 @@ export default function BoardClient(props: Props) {
               </div>
             )}
 
-            <div className={s.qrBadge}>▢ QR Platba</div>
+            <div className={s.qrBadge}>QR Platba</div>
 
             {props.demo === 'live' && (
               <p className={s.demoNote}>
