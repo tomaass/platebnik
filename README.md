@@ -68,3 +68,7 @@ Optional settings, which the app runs fine without:
 pnpm test                 # unit tests
 pnpm exec playwright test # end-to-end tests
 ```
+
+## License
+
+The source is public to read, not to reuse. All rights reserved.
